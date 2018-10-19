@@ -1,0 +1,15 @@
+{
+  "name": "janus-videoroom-example",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build" : "./node_modules/.bin/browserify src.js -o bundle.js"
+  },
+  "author": "Herpiko Dwi Aguno <herpiko@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "browserify": "^16.2.3"
+  }
+}
