@@ -1,23 +1,27 @@
-window.VideoRoom = require('./videoroom');
+window.Room = require('./room');
 
-var server = 'https://pleasefillthis:8089/janus';
-var myroom = 1234; // Demo room
-var myusername = window.prompt('username : ');
-if (!myusername) {
+//var server = 'https://pleasefillthis:8089/janus';
+var server = 'https://gw.tarsius.id:8089/janus';
+var room = 1234; // Demo room
+var username = window.prompt('username : ');
+if (!username) {
   return alert('Username is needed. Please refresh');
 }
-document.getElementById('username').innerHTML = myusername;
+document.getElementById('username').innerHTML = username;
 
 // Event handlers
 var onLocalJoin = function(username, cb) {
-  document.getElementById('videolocal').innerHTML = '<div>' + username + '</div><video id="myvideo" style="width:inherit;" autoplay muted="muted"/>';
-  cb();
+  document.getElementById('videolocal').innerHTML = '<div>' + username + '</div><button id="local-toggle-mute" onclick="localToggleMute()">Mute</button><video id="myvideo" style="width:inherit;" autoplay muted="muted"/>';
+  let target = document.getElementById('myvideo');
+  cb(target);
   alert('Joined!')
 }
 
 var onRemoteJoin = function(index, username, cb) {
   document.getElementById('videoremote' + index).innerHTML = '<div>' + username + '</div><video style="width:inherit;" id="remotevideo' + index + '" autoplay/>';
-  cb();
+  let target = document.getElementById('remotevideo' + index);
+  cb(target);
+  alert('Other participant joined!')
 }
 
 var onRemoteUnjoin = function(index) {
@@ -26,24 +30,32 @@ var onRemoteUnjoin = function(index) {
 
 var options = {
   server: server,
-  room: myroom,
-  username: myusername,
-  localVideoElementId: 'videolocal',
-  remoteVideoElementIdPrefix: 'videoremote',
+  room: room,
   onLocalJoin: onLocalJoin,
   onRemoteJoin: onRemoteJoin,
   onRemoteUnjoin: onRemoteUnjoin,
 }
 
-var videoRoom = new window.VideoRoom(options);
+var room = window.room = new window.Room(options);
 
-videoRoom.init();
-videoRoom.start();
+room.init();
+room.start();
 
 document.getElementById('stop').onclick = function() {
-  videoRoom.stop();
+  room.stop();
 }
 
 document.getElementById('register').onclick = function() {
-  videoRoom.register();
+  room.register({username:username});
+}
+
+window.localToggleMute = function() {
+  room.toggleMute(function(muted){
+    var el = document.getElementById('local-toggle-mute');
+    if (muted) {
+      el.innerHTML = "Unmute";
+    } else {
+      el.innerHTML = "Mute";
+    }
+  });
 }

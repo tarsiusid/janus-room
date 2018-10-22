@@ -4,17 +4,15 @@ const Janus = require('./janus');
 // but the nested events in Janus lib make this difficult to implement, so yeah..
 var opaqueId = "videoroomtest-" + Janus.randomString(12);
 var server = null;
-var myroom = null;
-var myusername = null;
+var room = null;
+var username = null;
 var janus = null;
-var sfutest = null;
+var handler = null;
 var myid = null;
 var mystream = null;
 var mypvtid = null;
 var feeds = [];
 var bitrateTimer = [];
-var localVideoElementId = null;
-var remoteVideoElementIdPrefix = null;
 var onLocalJoin = null;
 var onRemoteJoin = null;
 var onRemoteUnjoin = null;
@@ -29,7 +27,7 @@ function getQueryStringValue(name) {
 
 function publishOwnFeed(useAudio) {
   // Publish our stream
-  sfutest.createOffer(
+  handler.createOffer(
     {
       // Add data:true here if you want to publish datachannels as well
       media: {
@@ -47,7 +45,7 @@ function publishOwnFeed(useAudio) {
           "audio": useAudio,
           "video": true
         };
-        sfutest.send({
+        handler.send({
           "message": publish,
           "jsep": jsep
         });
@@ -63,23 +61,13 @@ function publishOwnFeed(useAudio) {
     });
 }
 
-function toggleMute() {
-  var muted = sfutest.isAudioMuted();
-  Janus.log((muted ? "Unmuting" : "Muting") + " local stream...");
-  if (muted) {
-    sfutest.unmuteAudio();
-  } else {
-    sfutest.muteAudio();
-  }
-  muted = sfutest.isAudioMuted();
-}
 
 function unpublishOwnFeed() {
   // Unpublish our stream
   var unpublish = {
     "request": "unpublish"
   };
-  sfutest.send({
+  handler.send({
     "message": unpublish
   });
 }
@@ -99,7 +87,7 @@ function newRemoteFeed(id, display, audio, video) {
         // We wait for the plugin to send us an offer
         var listen = {
           "request": "join",
-          "room": myroom,
+          "room": room,
           "ptype": "subscriber",
           "feed": id,
           "private_id": mypvtid
@@ -186,7 +174,7 @@ function newRemoteFeed(id, display, audio, video) {
                 Janus.debug(jsep);
                 var body = {
                   "request": "start",
-                  "room": myroom
+                  "room": room
                 };
                 remoteFeed.send({
                   "message": body,
@@ -208,8 +196,8 @@ function newRemoteFeed(id, display, audio, video) {
       },
       onremotestream: function(stream) {
         Janus.debug("Remote feed #" + remoteFeed.rfindex);
-        onRemoteJoin(remoteFeed.rfindex, remoteFeed.rfdisplay, () => {
-          Janus.attachMediaStream(document.getElementById('remotevideo' + remoteFeed.rfindex), stream);
+        onRemoteJoin(remoteFeed.rfindex, remoteFeed.rfdisplay, (el) => {
+          Janus.attachMediaStream(el, stream);
         });
       },
       oncleanup: function() {
@@ -231,10 +219,7 @@ class VideoRoom {
     console.log(options);
     server = options.server;
     opaqueId = "videoroomtest-" + Janus.randomString(12);
-    myroom = options.room;
-    myusername = options.username;
-    localVideoElementId = options.localVideoElementId;
-    remoteVideoElementIdPrefix = options.remoteVideoElementIdPrefix;
+    room = options.room;
     onLocalJoin = options.onLocalJoin;
     onRemoteJoin = options.onRemoteJoin;
     onRemoteUnjoin = options.onRemoteUnjoin;
@@ -248,9 +233,9 @@ class VideoRoom {
         plugin: "janus.plugin.videoroom",
         opaqueId: opaqueId,
         success: function(pluginHandle) {
-          sfutest = pluginHandle;
-          console.log(sfutest);
-          Janus.log("Plugin attached! (" + sfutest.getPlugin() + ", id=" + sfutest.getId() + ")");
+          handler = pluginHandle;
+          console.log(handler);
+          Janus.log("Plugin attached! (" + handler.getPlugin() + ", id=" + handler.getId() + ")");
           Janus.log("  -- This is a publisher/manager");
         },
         error: function(error) {
@@ -339,7 +324,7 @@ class VideoRoom {
                 Janus.log("Publisher left: " + unpublished);
                 if (unpublished === 'ok') {
                   // That's us
-                  sfutest.hangup();
+                  handler.hangup();
                   return;
                 }
                 var remoteFeed = null;
@@ -358,9 +343,9 @@ class VideoRoom {
                 if (msg["error_code"] === 426) {
                   // This is a "no such room" error: give a more meaningful description
                   alert(
-                    "<p>Apparently room <code>" + myroom + "</code> (the one this.demo uses as a test room) " +
+                    "<p>Apparently room <code>" + room + "</code> (the one this.demo uses as a test room) " +
                     "does not exist...</p><p>Do you have an updated <code>janus.plugin.videoroom.cfg</code> " +
-                    "configuration file? If not, make sure you copy the details of room <code>" + myroom + "</code> " +
+                    "configuration file? If not, make sure you copy the details of room <code>" + room + "</code> " +
                     "from that sample in your current configuration file, then restart Janus and try again."
                   );
                 } else {
@@ -372,7 +357,7 @@ class VideoRoom {
           if (jsep !== undefined && jsep !== null) {
             Janus.debug("Handling SDP as well...");
             Janus.debug(jsep);
-            sfutest.handleRemoteJsep({
+            handler.handleRemoteJsep({
               jsep: jsep
             });
             // Check if any of the media we wanted to publish has
@@ -394,8 +379,8 @@ class VideoRoom {
           Janus.debug(" ::: Got a local stream :::");
           mystream = stream;
           Janus.debug(stream);
-          onLocalJoin(myusername, () => {
-            Janus.attachMediaStream(document.getElementById("myvideo"), stream);
+          onLocalJoin(username, (el) => {
+            Janus.attachMediaStream(el, stream);
             var videoTracks = stream.getVideoTracks();
             if (videoTracks === null || videoTracks === undefined || videoTracks.length === 0) {
               alert('no webcam');
@@ -453,17 +438,31 @@ class VideoRoom {
     }
   }
 
-  register() {
+  register(options) {
+    username = options.username;
     var register = {
       "request": "join",
-      "room": myroom,
+      "room": room,
       "ptype": "publisher",
-      "display": myusername
+      "display": username
     };
     console.log(register);
-    sfutest.send({
+    handler.send({
       "message": register
     });
+  }
+
+  toggleMute(cb) {
+    let muted = handler.isAudioMuted();
+    Janus.log((muted ? "Unmuting" : "Muting") + " local stream...");
+    if (muted) {
+      handler.unmuteAudio();
+    } else {
+      handler.muteAudio();
+    }
+    if (cb) {
+      cb(handler.isAudioMuted());
+    }
   }
 
   checkEnter(field, event) {
@@ -478,10 +477,6 @@ class VideoRoom {
 
   publishOwnFeed(useAudio) {
     publishOwnFeed(useAudio);
-  }
-
-  toggleMute() {
-    toggleMute();
   }
 
   unpublishOwnFeed() {
