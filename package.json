@@ -1,5 +1,5 @@
 {
-  "name": "janus-videoroom-example",
+  "name": "janus-room-client",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
