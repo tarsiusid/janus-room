@@ -1,4 +1,4 @@
-### Janus VideoRoom Example
+### Janus Room
 
 - `yarn`
 - `npm run build`
