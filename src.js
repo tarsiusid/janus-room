@@ -1,6 +1,6 @@
 const Janus = window.Janus = require('./janus');
 
-// These values intended to be tied in the class 
+// TODO These values intended to be tied in the class 
 // but the nested events in Janus lib make this difficult to implement, so yeah..
 var opaqueId = "videoroomtest-" + Janus.randomString(12);
 var server = null;
@@ -19,6 +19,9 @@ var onRemoteJoin = null;
 var onRemoteUnjoin = null;
 var onMessage = null;
 var onDestroyed = null;
+
+// TODO Remove unused events / functions
+// TODO In promise func, catch any possible errors and pass it to reject()
 
 // Helpers
 function getQueryStringValue(name) {
@@ -217,9 +220,7 @@ function newRemoteFeed(id, display, audio, video) {
       onremotestream: function(stream) {
         Janus.debug("Remote feed #" + remoteFeed.rfindex);
         remotestreams[remoteFeed.rfindex] = stream;
-        onRemoteJoin(remoteFeed.rfindex, remoteFeed.rfdisplay, (el) => {
-          Janus.attachMediaStream(el, remotestreams[remoteFeed.rfindex]);
-        });
+        onRemoteJoin(remoteFeed.rfindex, remoteFeed.rfdisplay);
       },
       oncleanup: function() {
         Janus.log(" ::: Got a cleanup notification (remote feed " + id + ") :::");
@@ -227,7 +228,8 @@ function newRemoteFeed(id, display, audio, video) {
           remoteFeed.spinner.stop();
         }
         remoteFeed.spinner = null;
-        onRemoteUnjoin(remoteFeed.rfindex);
+        delete(remotestreams[remoteFeed.rfindex]);
+        onRemoteUnjoin(remoteFeed.rfindex, remoteFeed.rfdisplay);
       }
     });
 }
@@ -251,7 +253,6 @@ class VideoRoom {
   }
 
   start() {
-    // TODO use promise
     return new Promise((resolve, reject) => {
       let self = this;
       // Make sure the browser supports WebRTC
@@ -417,16 +418,7 @@ class VideoRoom {
           Janus.debug(" ::: Got a local stream :::");
           mystream = stream;
           Janus.debug(stream);
-          onLocalJoin(username, (el) => {
-            Janus.attachMediaStream(el, stream);
-            var videoTracks = stream.getVideoTracks();
-            if (videoTracks === null || videoTracks === undefined || videoTracks.length === 0) {
-              alert('No webcam');
-            // No webcam
-            } else {
-              console.log('There is webcam');
-            }
-          });
+          onLocalJoin();
         },
         onremotestream: function(stream) {
           // The publisher stream is sendonly, we don't expect anything here
@@ -454,8 +446,9 @@ class VideoRoom {
   }
 
   init() {
-    // TODO use promise, check for values in constsructor
     return new Promise((resolve, reject) => {
+      // TODO check for values in constsructor
+      // reject(err)
       Janus.init({
         debug: "all",
         callback: function() {
@@ -476,6 +469,10 @@ class VideoRoom {
 
   register(options) {
     new Promise((resolve, reject) => {
+      if (!options || (options && !options.username)) {
+        reject('Username is needed.');
+        return;
+      }
       username = options.username;
       var register = {
         "request": "join",
