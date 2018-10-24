@@ -10,6 +10,7 @@ var janus = null;
 var handler = null;
 var myid = null;
 var mystream = null;
+var remotestreams = {};
 var mypvtid = null;
 var feeds = [];
 var bitrateTimer = [];
@@ -210,8 +211,9 @@ function newRemoteFeed(id, display, audio, video) {
       },
       onremotestream: function(stream) {
         Janus.debug("Remote feed #" + remoteFeed.rfindex);
+        remotestreams[remoteFeed.rfindex] = stream;
         onRemoteJoin(remoteFeed.rfindex, remoteFeed.rfdisplay, (el) => {
-          Janus.attachMediaStream(el, stream);
+          Janus.attachMediaStream(el, remotestreams[remoteFeed.rfindex]);
         });
       },
       oncleanup: function() {
@@ -520,6 +522,20 @@ class VideoRoom {
           reject(err);
         },
       });
+    });
+  }
+
+  attachStream(target, index) {
+    return new Promise((resolve, reject) => {
+      Janus.attachMediaStream(target, remotestreams[index]);
+      resolve();
+    });
+  }
+
+  attachLocalStream(target) {
+    return new Promise((resolve, reject) => {
+      Janus.attachMediaStream(target, mystream);
+      resolve();
     });
   }
   
