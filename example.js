@@ -1,7 +1,8 @@
 window.Room = require('./src');
 
+var room;
 var server = 'https://localhost:8089/janus';
-var room = 1234; // Demo room
+var roomId = 1234; // Demo room
 var username = window.prompt('username : ');
 if (!username) {
   return alert('Username is needed. Please refresh');
@@ -16,13 +17,13 @@ var onLocalJoin = function(username, cb) {
   htmlStr += '<video id="myvideo" style="width:inherit;" autoplay muted="muted"/>';
   document.getElementById('videolocal').innerHTML = htmlStr;
   let target = document.getElementById('myvideo');
-  cb(target);
+  room.attachLocalStream(target);
 }
 
 var onRemoteJoin = function(index, username, cb) {
   document.getElementById('videoremote' + index).innerHTML = '<div>' + username + '</div><video style="width:inherit;" id="remotevideo' + index + '" autoplay/>';
   let target = document.getElementById('remotevideo' + index);
-  cb(target);
+  room.attachStream(target, index);
 }
 
 var onRemoteUnjoin = function(index) {
@@ -32,7 +33,6 @@ var onRemoteUnjoin = function(index) {
 var onMessage = function(data) {
   if (!data) return;
   console.log(data);
-  data = JSON.parse(data);
   if (data.type && data.type === 'chat') {
     document.getElementById("chatbox").innerHTML += '<p>' + data.sender + ' : ' + data.message + '</p><hr>';
   } else if (data.type && data.type === 'request') {
@@ -43,14 +43,14 @@ var onMessage = function(data) {
 
 var options = {
   server: server,
-  room: room,
+  room: roomId,
   onLocalJoin: onLocalJoin,
   onRemoteJoin: onRemoteJoin,
   onRemoteUnjoin: onRemoteUnjoin,
   onMessage: onMessage,
 }
 
-var room = window.room = new window.Room(options);
+room = window.room = new window.Room(options);
 
 room.init()
 .then(function(){
