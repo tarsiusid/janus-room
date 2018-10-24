@@ -207,7 +207,12 @@ function newRemoteFeed(id, display, audio, video) {
         // The subscriber stream is recvonly, we don't expect anything here
       },
       ondata: function(data) {
-        onMessage(data);
+        try {
+          data = JSON.parse(data);
+          onMessage(data);
+        } catch(err) {
+          onMessage({error : `Failed to parse JSON : ${err}`});
+        }
       },
       onremotestream: function(stream) {
         Janus.debug("Remote feed #" + remoteFeed.rfindex);
