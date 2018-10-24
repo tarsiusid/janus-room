@@ -459,9 +459,12 @@ class VideoRoom {
   }
 
   stop() {
-    if (janus) {
-      janus.destroy();
-    }
+    new Promise((resolve, reject) => {
+      if (janus) {
+        janus.destroy();
+      }
+      resolve();
+    });
   }
 
   register(options) {
