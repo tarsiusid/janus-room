@@ -1,7 +1,6 @@
-window.Room = require('./room');
+window.Room = require('./src');
 
-//var server = 'https://pleasefillthis:8089/janus';
-var server = 'https://gw.tarsius.id:8089/janus';
+var server = 'https://localhost:8089/janus';
 var room = 1234; // Demo room
 var username = window.prompt('username : ');
 if (!username) {
@@ -18,18 +17,28 @@ var onLocalJoin = function(username, cb) {
   document.getElementById('videolocal').innerHTML = htmlStr;
   let target = document.getElementById('myvideo');
   cb(target);
-  alert('Joined!')
 }
 
 var onRemoteJoin = function(index, username, cb) {
   document.getElementById('videoremote' + index).innerHTML = '<div>' + username + '</div><video style="width:inherit;" id="remotevideo' + index + '" autoplay/>';
   let target = document.getElementById('remotevideo' + index);
   cb(target);
-  alert('Other participant joined!')
 }
 
 var onRemoteUnjoin = function(index) {
   document.getElementById('videoremote' + index).innerHTML = '<div>videoremote' + index + '</div>';
+}
+
+var onMessage = function(data) {
+  if (!data) return;
+  console.log(data);
+  data = JSON.parse(data);
+  if (data.type && data.type === 'chat') {
+    document.getElementById("chatbox").innerHTML += '<p>' + data.sender + ' : ' + data.message + '</p><hr>';
+  } else if (data.type && data.type === 'request') {
+    if (data.action && data.action === 'muteAudio') {
+    }
+  }
 }
 
 var options = {
@@ -38,12 +47,20 @@ var options = {
   onLocalJoin: onLocalJoin,
   onRemoteJoin: onRemoteJoin,
   onRemoteUnjoin: onRemoteUnjoin,
+  onMessage: onMessage,
 }
 
 var room = window.room = new window.Room(options);
 
-room.init();
-room.start();
+room.init()
+.then(function(){
+  return room.start();
+})
+.then(function(){
+  setTimeout(function(){
+    room.register({username:username});
+  }, 1000);
+});
 
 document.getElementById('stop').onclick = function() {
   room.stop();
@@ -53,8 +70,17 @@ document.getElementById('register').onclick = function() {
   room.register({username:username});
 }
 
+document.getElementById('chatsend').onclick = function() {
+  var message = document.getElementById('chatinput').value;
+  room.sendMessage({type : 'chat', sender:username, message : message})
+  .then(function(data){
+    document.getElementById("chatbox").innerHTML += '<p>' + username + ' : ' + message + '</p><hr>';
+  });
+}
+
 window.localToggleMuteAudio = function() {
-  room.toggleMuteAudio(function(muted){
+  room.toggleMuteAudio()
+  .then((muted) => {
     var el = document.getElementById('local-toggle-mute-audio');
     if (muted) {
       el.innerHTML = "Unmute";
@@ -65,7 +91,8 @@ window.localToggleMuteAudio = function() {
 }
 
 window.localToggleMuteVideo = function() {
-  room.toggleMuteVideo(function(muted){
+  room.toggleMuteVideo()
+  .then((muted) => {
     var el = document.getElementById('local-toggle-mute-video');
     if (muted) {
       el.innerHTML = "Resume webcam";

@@ -1,4 +1,4 @@
-const Janus = require('./janus');
+const Janus = window.Janus = require('./janus');
 
 // These values intended to be tied in the class 
 // but the nested events in Janus lib make this difficult to implement, so yeah..
@@ -16,6 +16,8 @@ var bitrateTimer = [];
 var onLocalJoin = null;
 var onRemoteJoin = null;
 var onRemoteUnjoin = null;
+var onMessage = null;
+var onDestroyed = null;
 
 // Helpers
 function getQueryStringValue(name) {
@@ -34,7 +36,8 @@ function publishOwnFeed(useAudio) {
         audioRecv: false,
         videoRecv: false,
         audioSend: useAudio,
-        videoSend: true
+        videoSend: true,
+        data: true,
       }, // Publishers are sendonly
       simulcast: doSimulcast,
       success: function(jsep) {
@@ -43,7 +46,8 @@ function publishOwnFeed(useAudio) {
         var publish = {
           "request": "configure",
           "audio": useAudio,
-          "video": true
+          "video": true,
+          "data": true
         };
         handler.send({
           "message": publish,
@@ -104,10 +108,16 @@ function newRemoteFeed(id, display, audio, video) {
           toastr.warning("Publisher is using " + video + ", but Safari doesn't support it: disabling video");
           listen["offer_video"] = false;
         }
+        listen["offer_data"] = true;
         remoteFeed.videoCodec = video;
         remoteFeed.send({
           "message": listen
         });
+
+        // Setup DataChannel
+        var body = { "request" : "setup" }
+        pluginHandle.send({"message" : body });
+
       },
       error: function(error) {
         Janus.error("  -- Error attaching plugin...", error);
@@ -167,7 +177,8 @@ function newRemoteFeed(id, display, audio, video) {
               // (obviously only works if the publisher offered them in the first place)
               media: {
                 audioSend: false,
-                videoSend: false
+                videoSend: false,
+                data: true,
               }, // We want recvonly audio/video
               success: function(jsep) {
                 Janus.debug("Got SDP!");
@@ -194,6 +205,9 @@ function newRemoteFeed(id, display, audio, video) {
       onlocalstream: function(stream) {
         // The subscriber stream is recvonly, we don't expect anything here
       },
+      ondata: function(data) {
+        onMessage(data);
+      },
       onremotestream: function(stream) {
         Janus.debug("Remote feed #" + remoteFeed.rfindex);
         onRemoteJoin(remoteFeed.rfindex, remoteFeed.rfdisplay, (el) => {
@@ -216,16 +230,33 @@ var doSimulcast = (getQueryStringValue("simulcast") === "yes" || getQueryStringV
 class VideoRoom {
 
   constructor(options) {
-    console.log(options);
-    server = options.server;
+    server = options.server || null;
     opaqueId = "videoroomtest-" + Janus.randomString(12);
-    room = options.room;
-    onLocalJoin = options.onLocalJoin;
-    onRemoteJoin = options.onRemoteJoin;
-    onRemoteUnjoin = options.onRemoteUnjoin;
+    room = options.room || null;
+    onLocalJoin = options.onLocalJoin || null;
+    onRemoteJoin = options.onRemoteJoin || null;
+    onRemoteUnjoin = options.onRemoteUnjoin || null;
+    onMessage = options.onMessage || null;
+    onDestroyed = options.onDestroyed || null;
   }
 
-  onStartSuccess() {
+  onStartSuccess(cb) {
+  }
+
+  start() {
+    // TODO use promise
+    return new Promise((resolve, reject) => {
+      let self = this;
+      // Make sure the browser supports WebRTC
+      if (!Janus.isWebrtcSupported()) {
+        alert("No WebRTC support... ");
+        return;
+      }
+      // Create session
+      janus = window.j = new Janus(
+        {
+          server: server,
+          success: function(){
     // Attach to video room test plugin
     let self = this;
     janus.attach(
@@ -234,9 +265,9 @@ class VideoRoom {
         opaqueId: opaqueId,
         success: function(pluginHandle) {
           handler = pluginHandle;
-          console.log(handler);
           Janus.log("Plugin attached! (" + handler.getPlugin() + ", id=" + handler.getId() + ")");
           Janus.log("  -- This is a publisher/manager");
+            resolve();
         },
         error: function(error) {
           Janus.error("  -- Error attaching plugin...", error);
@@ -383,7 +414,7 @@ class VideoRoom {
             Janus.attachMediaStream(el, stream);
             var videoTracks = stream.getVideoTracks();
             if (videoTracks === null || videoTracks === undefined || videoTracks.length === 0) {
-              alert('no webcam');
+              alert('No webcam');
             // No webcam
             } else {
               console.log('There is webcam');
@@ -393,42 +424,37 @@ class VideoRoom {
         onremotestream: function(stream) {
           // The publisher stream is sendonly, we don't expect anything here
         },
+        ondataopen: function(data) {
+          console.log('ondataopen');
+        },
         oncleanup: function() {
           Janus.log(" ::: Got a cleanup notification: we are unpublished now :::");
           alert('Hang up. Got a cleanup notif. Unpublishing.');
           this.mystream = null;
         }
       });
-  }
-
-  start() {
-    let self = this;
-    // Make sure the browser supports WebRTC
-    if (!Janus.isWebrtcSupported()) {
-      alert("No WebRTC support... ");
-      return;
-    }
-    // Create session
-    janus = new Janus(
-      {
-        server: server,
-        success: this.onStartSuccess,
-        error: function(error) {
-          Janus.error(error);
-          alert(error, function() {
-            window.location.reload();
-          });
-        },
-        destroyed: function() {
-          window.location.reload();
+          },
+          error: function(error) {
+            Janus.error(error);
+            reject(e);
+          },
+          destroyed: function() {
+            console.log('Destroyed');
+          }
         }
-      });
+      );
+    });
   }
 
   init() {
-    Janus.init({
-      debug: "all",
-      callback: function() {}
+    // TODO use promise, check for values in constsructor
+    return new Promise((resolve, reject) => {
+      Janus.init({
+        debug: "all",
+        callback: function() {
+          resolve();
+        }
+      });
     });
   }
 
@@ -439,43 +465,59 @@ class VideoRoom {
   }
 
   register(options) {
-    username = options.username;
-    var register = {
-      "request": "join",
-      "room": room,
-      "ptype": "publisher",
-      "display": username
-    };
-    console.log(register);
-    handler.send({
-      "message": register
+    new Promise((resolve, reject) => {
+      username = options.username;
+      var register = {
+        "request": "join",
+        "room": room,
+        "ptype": "publisher",
+        "display": username
+      };
+      handler.send({
+        "message": register
+      });
+      resolve();
     });
   }
 
-  toggleMuteAudio(cb) {
-    let muted = handler.isAudioMuted();
-    Janus.log((muted ? "Unmuting" : "Muting") + " local stream...");
-    if (muted) {
-      handler.unmuteAudio();
-    } else {
-      handler.muteAudio();
-    }
-    if (cb) {
-      cb(handler.isAudioMuted());
-    }
+  toggleMuteAudio() {
+    return new Promise((resolve, reject) => {
+      let muted = handler.isAudioMuted();
+      Janus.log((muted ? "Unmuting" : "Muting") + " local stream...");
+      if (muted) {
+        handler.unmuteAudio();
+      } else {
+        handler.muteAudio();
+      }
+      resolve(handler.isAudioMuted());
+    });
   }
 
-  toggleMuteVideo(cb) {
-    let muted = handler.isVideoMuted();
-    Janus.log((muted ? "Unmuting" : "Muting") + " local stream...");
-    if (muted) {
-      handler.unmuteVideo();
-    } else {
-      handler.muteVideo();
-    }
-    if (cb) {
-      cb(handler.isVideoMuted());
-    }
+  toggleMuteVideo() {
+    return new Promise((resolve, reject) => {
+      let muted = handler.isVideoMuted();
+      Janus.log((muted ? "Unmuting" : "Muting") + " local stream...");
+      if (muted) {
+        handler.unmuteVideo();
+      } else {
+        handler.muteVideo();
+      }
+      resolve(handler.isVideoMuted());
+    });
+  }
+
+  sendMessage(data) {
+    return new Promise((resolve, reject) => {
+      handler.data({
+        text: JSON.stringify(data),
+        success: function() {
+          resolve(data);
+        },
+        error: function(err){
+          reject(err);
+        },
+      });
+    });
   }
   
   checkEnter(field, event) {
