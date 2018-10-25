@@ -1,6 +1,6 @@
 {
   "name": "janus-room",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "",
   "main": "src.js",
   "scripts": {
@@ -8,6 +8,8 @@
     "build" : "./node_modules/.bin/browserify example.js -o bundle.js"
   },
   "author": "Herpiko Dwi Aguno <herpiko@gmail.com>",
+  "homepage": "https://github.com/tarsiusid/janus-room",
+
   "license": "MIT",
   "dependencies": {
     "browserify": "^16.2.3"
