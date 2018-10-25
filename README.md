@@ -1,3 +1,5 @@
+[![npm version](https://badge.fury.io/js/janus-room.png)](https://badge.fury.io/js/janus-room)
+
 ### Janus Room
 
 A Janus client library that provides simple interface to create a minimal-complete conference video room. This is adopted from Janus demo example code but it's JQuery-less and React/Vue friendly.
