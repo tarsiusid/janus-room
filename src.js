@@ -554,18 +554,11 @@ class VideoRoom {
   attachStream(target, index) {
     return new Promise((resolve, reject) => {
       try {
-        Janus.attachMediaStream(target, remotestreams[index]);
-        resolve();
-      } catch ( err ) {
-        reject(err);
-      }
-    });
-  }
-
-  attachLocalStream(target) {
-    return new Promise((resolve, reject) => {
-      try {
-        Janus.attachMediaStream(target, mystream);
+        if (index === 0) {
+          Janus.attachMediaStream(target, mystream);
+        } else {
+          Janus.attachMediaStream(target, remotestreams[index]);
+        }
         resolve();
       } catch ( err ) {
         reject(err);

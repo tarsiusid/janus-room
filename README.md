@@ -10,7 +10,7 @@ A Janus client library that provides simple interface to create a minimal-comple
 $ yarn add janus-room
 ```
 
-### Usage
+### Basic usage
 
 ```
 import Room from 'janus-room';
@@ -38,6 +38,9 @@ room.init()
   room.register({
     username:username // required
   });
+})
+.catch(function(err){
+  alert(err);
 });
 ```
 
@@ -49,7 +52,7 @@ room.init()
 - `room.attachStream(element, streamIndex)` - Attach a remote stream to a `<video>` element.
 - `room.attachLocalStream(element)` - Attach local stream to a `<video>` element.
 
-### Events
+### Events (passed as params)
 
 - `onLocalJoin(() => { ...`
 - `onRemoteJoin((streamIndex, username) => { ...`
