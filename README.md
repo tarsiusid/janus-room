@@ -66,3 +66,8 @@ Adjust the Janus gateway URL in `example.js`, then,
 - `yarn`
 - `npm run build`
 - Open `example.html` with your web browser.
+
+-----
+
+![tarsier](https://user-images.githubusercontent.com/2534060/47661055-e06e4580-dbca-11e8-96f4-30dcdcb14c81.png)
+
