@@ -49,8 +49,7 @@ room.init()
 - `room.toggleMuteAudio()` - Toggle local mic.
 - `room.toggleMuteVideo()` - Toggle local video stream.
 - `room.sendMessage(data)` - Send message throught Janus's DataChannel (activated by default).
-- `room.attachStream(element, streamIndex)` - Attach a remote stream to a `<video>` element.
-- `room.attachLocalStream(element)` - Attach local stream to a `<video>` element.
+- `room.attachStream(element, streamIndex)` - Attach a remote stream to a `<video>` element. Local stream is on 0.
 
 ### Events (passed as params)
 
@@ -67,3 +66,8 @@ Adjust the Janus gateway URL in `example.js`, then,
 - `yarn`
 - `npm run build`
 - Open `example.html` with your web browser.
+
+-----
+
+![tarsier](https://user-images.githubusercontent.com/2534060/47661055-e06e4580-dbca-11e8-96f4-30dcdcb14c81.png)
+

@@ -472,6 +472,10 @@ class VideoRoom {
 
   stop() {
     if (janus) {
+      // Make sure the webcam and microphone got turned off first
+      handler.muteAudio();
+      handler.muteVideo();
+      // Destroy the session
       janus.destroy();
     }
   }
