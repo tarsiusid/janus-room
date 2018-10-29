@@ -473,8 +473,14 @@ class VideoRoom {
   stop() {
     if (janus) {
       // Make sure the webcam and microphone got turned off first
-      handler.muteAudio();
-      handler.muteVideo();
+      if (mystream) {
+        let tracks = mystream.getTracks();
+        for (let i in tracks) {
+          if (tracks[i]) {
+            tracks[i].stop();
+          }
+        }
+      }
       // Destroy the session
       janus.destroy();
     }
