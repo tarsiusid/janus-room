@@ -49,8 +49,7 @@ room.init()
 - `room.toggleMuteAudio()` - Toggle local mic.
 - `room.toggleMuteVideo()` - Toggle local video stream.
 - `room.sendMessage(data)` - Send message throught Janus's DataChannel (activated by default).
-- `room.attachStream(element, streamIndex)` - Attach a remote stream to a `<video>` element.
-- `room.attachLocalStream(element)` - Attach local stream to a `<video>` element.
+- `room.attachStream(element, streamIndex)` - Attach a remote stream to a `<video>` element. Local stream is on 0.
 
 ### Events (passed as params)
 

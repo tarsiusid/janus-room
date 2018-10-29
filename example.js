@@ -21,7 +21,7 @@ var onLocalJoin = function() {
   htmlStr += '<video id="myvideo" style="width:inherit;" autoplay muted="muted"/>';
   document.getElementById('videolocal').innerHTML = htmlStr;
   let target = document.getElementById('myvideo');
-  room.attachLocalStream(target);
+  room.attachStream(target, 0);
 }
 
 var onRemoteJoin = function(index, remoteUsername, cb) {
@@ -72,7 +72,7 @@ room.init()
 
 document.getElementById('stop').onclick = function() {
   room.stop()
-  alert('Successfuly quit');
+  alert('Successfuly quit. The page will be reloaded.');
   window.location.reload();
 }
 
