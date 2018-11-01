@@ -56,7 +56,7 @@ var defaultExtension = {
   getScreen: function(callback) {
     var pending = window.setTimeout(function() {
       error = new Error('NavigatorUserMediaError');
-      error.name = 'The required Chrome extension is not installed: click <a href="#">here</a> to install it. (NOTE: this will need you to refresh the page)';
+      error.name = 'The required Chrome extension is not installed';
       return callback(error);
     }, 1000);
     this.cache[pending] = callback;

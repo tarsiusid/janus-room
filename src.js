@@ -21,6 +21,7 @@ var onMessage = null;
 var onDestroyed = null;
 var onError = null;
 var isShareScreenActive = false;
+var extensionId = null;
 
 // TODO Remove unused events / functions
 // TODO In promise func, catch any possible errors and pass it to reject()
@@ -33,7 +34,7 @@ function getQueryStringValue(name) {
   return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
-function publishOwnFeed(useAudio, addVideo) {
+function publishOwnFeed(useAudio, replaceVideo) {
   // Publish our stream
   isShareScreenActive = false;
   handler.createOffer(
@@ -44,7 +45,7 @@ function publishOwnFeed(useAudio, addVideo) {
         videoRecv: false,
         audioSend: useAudio,
         videoSend: true,
-        replaceVideo: addVideo,
+        replaceVideo: replaceVideo,
         data: true,
       }, // Publishers are sendonly
       simulcast: doSimulcast,
@@ -113,7 +114,7 @@ function shareScreen(cb) {
       error: function(error) {
         Janus.error("WebRTC error:", error);
         if (cb) {
-          cb(err);
+          cb(error);
         }
       }
     });
@@ -287,6 +288,7 @@ class Room {
     server = options.server || null;
     opaqueId = "videoroomtest-" + Janus.randomString(12);
     room = options.room || null;
+    extensionId = options.extensionId || null;
     onLocalJoin = options.onLocalJoin || null;
     onRemoteJoin = options.onRemoteJoin || null;
     onRemoteUnjoin = options.onRemoteUnjoin || null;
@@ -503,7 +505,7 @@ class Room {
         }
         Janus.init({
           debug: "all",
-          extensionId: "bkkjmbohcfkfemepmepailpamnppmjkk",
+          extensionId: extensionId,
           callback: function() {
             resolve();
           }
