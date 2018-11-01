@@ -20,6 +20,7 @@ var onRemoteUnjoin = null;
 var onMessage = null;
 var onDestroyed = null;
 var onError = null;
+var isShareScreenActive = false;
 
 // TODO Remove unused events / functions
 // TODO In promise func, catch any possible errors and pass it to reject()
@@ -32,8 +33,9 @@ function getQueryStringValue(name) {
   return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
-function publishOwnFeed(useAudio) {
+function publishOwnFeed(useAudio, addVideo) {
   // Publish our stream
+  isShareScreenActive = false;
   handler.createOffer(
     {
       // Add data:true here if you want to publish datachannels as well
@@ -42,6 +44,7 @@ function publishOwnFeed(useAudio) {
         videoRecv: false,
         audioSend: useAudio,
         videoSend: true,
+        replaceVideo: addVideo,
         data: true,
       }, // Publishers are sendonly
       simulcast: doSimulcast,
@@ -79,6 +82,41 @@ function unpublishOwnFeed() {
   handler.send({
     "message": unpublish
   });
+}
+
+function shareScreen(cb) {
+  // Publish our stream
+  handler.createOffer(
+    {
+      // Add data:true here if you want to publish datachannels as well
+      media: {
+        video: 'screen',
+        videoRecv: false,
+        audioSend: false,
+        videoSend: true,
+      }, // Publishers are sendonly
+      success: function(jsep) {
+        Janus.debug("Got publisher SDP!");
+        Janus.debug(jsep);
+        var publish = {
+          "request": "configure",
+          "audio": true,
+          "video": true,
+          "data": true
+        };
+        isShareScreenActive = true;
+        handler.send({
+          "message": publish,
+          "jsep": jsep
+        });
+      },
+      error: function(error) {
+        Janus.error("WebRTC error:", error);
+        if (cb) {
+          cb(err);
+        }
+      }
+    });
 }
 
 function newRemoteFeed(id, display, audio, video) {
@@ -243,7 +281,7 @@ function newRemoteFeed(id, display, audio, video) {
 
 var doSimulcast = (getQueryStringValue("simulcast") === "yes" || getQueryStringValue("simulcast") === "true");
 
-class VideoRoom {
+class Room {
 
   constructor(options) {
     server = options.server || null;
@@ -295,6 +333,11 @@ class VideoRoom {
                   },
                   mediaState: function(medium, on) {
                     Janus.log("Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
+                    if (medium === 'video' && !on && isShareScreenActive) {
+                      console.log('Put back the webcam');
+                      publishOwnFeed(true, true);
+                      onLocalJoin();
+                    }
                   },
                   webrtcState: function(on) {
                     Janus.log("Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
@@ -460,6 +503,7 @@ class VideoRoom {
         }
         Janus.init({
           debug: "all",
+          extensionId: "bkkjmbohcfkfemepmepailpamnppmjkk",
           callback: function() {
             resolve();
           }
@@ -576,8 +620,25 @@ class VideoRoom {
     });
   }
 
-  publishOwnFeed(useAudio) {
-    publishOwnFeed(useAudio);
+  shareScreen() {
+    return new Promise((resolve, reject) => {
+      try {
+        unpublishOwnFeed()
+        shareScreen((err) => {
+          if (err) {
+            reject(err)
+            return;
+          }
+          resolve();
+        });
+      } catch ( err ) {
+        reject(err);
+      }
+    });
+  }
+
+  publishOwnFeed(useAudio, addVideo) {
+    publishOwnFeed(useAudio, addVideo);
   }
 
   unpublishOwnFeed() {
@@ -596,4 +657,4 @@ class VideoRoom {
 
 }
 
-module.exports = VideoRoom;
+module.exports = Room;

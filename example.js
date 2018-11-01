@@ -35,8 +35,9 @@ var onRemoteUnjoin = function(index) {
 }
 
 var onMessage = function(data) {
-  if (!data) return;
-  console.log(data);
+  if (!data) {
+    return;
+  }
   if (data.type && data.type === 'chat') {
     document.getElementById("chatbox").innerHTML += '<p>' + data.sender + ' : ' + data.message + '</p><hr>';
   } else if (data.type && data.type === 'request') {
@@ -57,18 +58,29 @@ var options = {
 room = window.room = new window.Room(options);
 
 room.init()
-.then(function(){
-  return room.start();
-})
-.then(function(){
-  setTimeout(function(){
-    room.register({username:username});
-  }, 1000);
-})
-.catch((err) => {
-  alert(err);
-  window.location.reload();
-});
+  .then(function() {
+    return room.start();
+  })
+  .then(function() {
+    setTimeout(function() {
+      room.register({
+        username: username
+      });
+    }, 1000);
+  })
+  .catch((err) => {
+    alert(err);
+    window.location.reload();
+  });
+
+document.getElementById('sharescreen').onclick = function() {
+  room.shareScreen()
+    .then(() => {
+    })
+    .catch((err) => {
+      alert(err);
+    });
+}
 
 document.getElementById('stop').onclick = function() {
   room.stop()
@@ -77,37 +89,43 @@ document.getElementById('stop').onclick = function() {
 }
 
 document.getElementById('register').onclick = function() {
-  room.register({username:username});
+  room.register({
+    username: username
+  });
 }
 
 document.getElementById('chatsend').onclick = function() {
   var message = document.getElementById('chatinput').value;
-  room.sendMessage({type : 'chat', sender:username, message : message})
-  .then(function(data){
+  room.sendMessage({
+    type: 'chat',
+    sender: username,
+    message: message
+  })
+  .then(function(data) {
     document.getElementById("chatbox").innerHTML += '<p>' + username + ' : ' + message + '</p><hr>';
   });
 }
 
 window.localToggleMuteAudio = function() {
   room.toggleMuteAudio()
-  .then((muted) => {
-    var el = document.getElementById('local-toggle-mute-audio');
-    if (muted) {
-      el.innerHTML = "Unmute";
-    } else {
-      el.innerHTML = "Mute";
-    }
-  });
+    .then((muted) => {
+      var el = document.getElementById('local-toggle-mute-audio');
+      if (muted) {
+        el.innerHTML = "Unmute";
+      } else {
+        el.innerHTML = "Mute";
+      }
+    });
 }
 
 window.localToggleMuteVideo = function() {
   room.toggleMuteVideo()
-  .then((muted) => {
-    var el = document.getElementById('local-toggle-mute-video');
-    if (muted) {
-      el.innerHTML = "Resume webcam";
-    } else {
-      el.innerHTML = "Pause webcam";
-    }
-  });
+    .then((muted) => {
+      var el = document.getElementById('local-toggle-mute-video');
+      if (muted) {
+        el.innerHTML = "Resume webcam";
+      } else {
+        el.innerHTML = "Pause webcam";
+      }
+    });
 }
