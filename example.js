@@ -1,5 +1,5 @@
 window.Room = require('./src');
-a
+
 var room;
 var server = 'https://localhost:8089/janus';
 var roomId = 1234; // Demo room

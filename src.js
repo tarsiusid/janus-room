@@ -34,7 +34,8 @@ function getQueryStringValue(name) {
   return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
-function publishOwnFeed(useAudio, replaceVideo) {
+function publishOwnFeed(opts, cb) {
+  opts = opts || {}
   // Publish our stream
   isShareScreenActive = false;
   handler.createOffer(
@@ -43,9 +44,9 @@ function publishOwnFeed(useAudio, replaceVideo) {
       media: {
         audioRecv: false,
         videoRecv: false,
-        audioSend: useAudio,
+        audioSend: opts.audioSend,
         videoSend: true,
-        replaceVideo: replaceVideo,
+        replaceVideo: opts.replaceVideo,
         data: true,
       }, // Publishers are sendonly
       simulcast: doSimulcast,
@@ -54,7 +55,7 @@ function publishOwnFeed(useAudio, replaceVideo) {
         Janus.debug(jsep);
         var publish = {
           "request": "configure",
-          "audio": useAudio,
+          "audio": opts.audioSend,
           "video": true,
           "data": true
         };
@@ -62,11 +63,14 @@ function publishOwnFeed(useAudio, replaceVideo) {
           "message": publish,
           "jsep": jsep
         });
+        if (cb) {
+          cb();
+        }
       },
       error: function(error) {
         Janus.error("WebRTC error:", error);
         if (useAudio) {
-          publishOwnFeed(false);
+          publishOwnFeed({audioSend:false});
         } else {
           onError("WebRTC error... " + JSON.stringify(error));
         }
@@ -335,10 +339,9 @@ class Room {
                   },
                   mediaState: function(medium, on) {
                     Janus.log("Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
-                    if (medium === 'video' && !on && isShareScreenActive) {
+                    if (medium === 'video' && !on && isShareScreenActive && !mystream.active) {
                       console.log('Put back the webcam');
-                      publishOwnFeed(true, true);
-                      onLocalJoin();
+                      publishOwnFeed({audioSend:true,replaceVideo:true});
                     }
                   },
                   webrtcState: function(on) {
@@ -350,12 +353,12 @@ class Room {
                     var event = msg["videoroom"];
                     Janus.debug("Event: " + event);
                     if (event != undefined && event != null) {
-                      if (event === "joined") {
+                      if (event === "joined" && !isShareScreenActive) {
                         // Publisher/manager created, negotiate WebRTC and attach to existing feeds, if any
                         myid = msg["id"];
                         mypvtid = msg["private_id"];
                         Janus.log("Successfully joined room " + msg["room"] + " with ID " + myid);
-                        publishOwnFeed(true);
+                        publishOwnFeed({audioSend:true});
                         // Any new feed to attach to?
                         if (msg["publishers"] !== undefined && msg["publishers"] !== null) {
                           var list = msg["publishers"];
@@ -463,7 +466,7 @@ class Room {
                   },
                   onlocalstream: function(stream) {
                     Janus.debug(" ::: Got a local stream :::");
-                    mystream = stream;
+                    mystream = window.mystream = stream; // attach to global for debugging purpose
                     Janus.debug(stream);
                     onLocalJoin();
                   },
@@ -626,13 +629,15 @@ class Room {
     return new Promise((resolve, reject) => {
       try {
         unpublishOwnFeed()
-        shareScreen((err) => {
-          if (err) {
-            reject(err)
-            return;
-          }
-          resolve();
-        });
+        setTimeout(() => {
+          shareScreen((err) => {
+            if (err) {
+              reject(err)
+              return;
+            }
+            resolve();
+          });
+        }, 500);
       } catch ( err ) {
         reject(err);
       }
