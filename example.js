@@ -1,5 +1,5 @@
 window.Room = require('./src');
-
+a
 var room;
 var server = 'https://localhost:8089/janus';
 var roomId = 1234; // Demo room
@@ -49,6 +49,7 @@ var onMessage = function(data) {
 var options = {
   server: server,
   room: roomId,
+  extensionId : 'bkkjmbohcfkfemepmepailpamnppmjkk',
   onLocalJoin: onLocalJoin,
   onRemoteJoin: onRemoteJoin,
   onRemoteUnjoin: onRemoteUnjoin,
