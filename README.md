@@ -32,9 +32,6 @@ var options = {
 var room = new Room(options);
 room.init()
 .then(function(){
-  return room.start();
-})
-.then(function(){
   room.register({
     username:username // required
   });
@@ -46,11 +43,14 @@ room.init()
 
 ### Methods
 
+- `room.initt()` - Initialize the session.
 - `room.toggleMuteAudio()` - Toggle local mic.
 - `room.toggleMuteVideo()` - Toggle local video stream.
 - `room.sendMessage(data)` - Send message throught Janus's DataChannel (activated by default).
 - `room.attachStream(element, streamIndex)` - Attach a remote stream to a `<video>` element. Local stream is on 0.
 - `room.shareScreen()` - Share screen.
+- `room.createRoom({room:1337})` - Create new room.
+- `room.removeRoom()` - Remove current room.
 
 ### Events (passed as params)
 
