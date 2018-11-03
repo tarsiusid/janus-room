@@ -32,9 +32,6 @@ var options = {
 var room = new Room(options);
 room.init()
 .then(function(){
-  return room.start();
-})
-.then(function(){
   room.register({
     username:username // required
   });
@@ -46,6 +43,7 @@ room.init()
 
 ### Methods
 
+- `room.initt()` - Initialize the session.
 - `room.toggleMuteAudio()` - Toggle local mic.
 - `room.toggleMuteVideo()` - Toggle local video stream.
 - `room.sendMessage(data)` - Send message throught Janus's DataChannel (activated by default).
