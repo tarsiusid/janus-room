@@ -2,7 +2,7 @@ window.Room = require('./src');
 
 var room;
 var server = 'https://localhost:8089/janus';
-var roomId = 1234; // Demo room
+var roomId = 1337; // Demo room
 var username = window.prompt('username : ');
 if (!username) {
   return alert('Username is needed. Please refresh');
@@ -11,7 +11,23 @@ document.getElementById('username').innerHTML = username;
 
 // Event handlers
 var onError = function(err) {
-  alert(err);
+  if (err.indexOf('The room is unavailable') > -1) {
+    alert('Room ' + roomId + ' is unavailable. Let\'s create one.');
+    room.createRoom({room:roomId})
+      .then(() => {
+        setTimeout(function() {
+          room.register({
+            username: username,
+            room: roomId
+          });
+        }, 1000);
+      })
+      .catch((err) => {
+        alert(err);
+      })
+  } else {
+    alert(err);
+  }
 }
 
 var onLocalJoin = function() {
@@ -49,7 +65,8 @@ var onMessage = function(data) {
 var options = {
   server: server,
   room: roomId,
-  extensionId : 'bkkjmbohcfkfemepmepailpamnppmjkk',
+  token: 'a1b2c3d4',
+  extensionId: 'bkkjmbohcfkfemepmepailpamnppmjkk',
   onLocalJoin: onLocalJoin,
   onRemoteJoin: onRemoteJoin,
   onRemoteUnjoin: onRemoteUnjoin,
@@ -57,21 +74,17 @@ var options = {
 }
 
 room = window.room = new window.Room(options);
-
 room.init()
-  .then(function() {
-    return room.start();
-  })
   .then(function() {
     setTimeout(function() {
       room.register({
-        username: username
+        username: username,
+        room: roomId
       });
     }, 1000);
   })
   .catch((err) => {
     alert(err);
-    window.location.reload();
   });
 
 document.getElementById('sharescreen').onclick = function() {
@@ -84,7 +97,12 @@ document.getElementById('sharescreen').onclick = function() {
 }
 
 document.getElementById('stop').onclick = function() {
-  room.stop()
+  room.removeRoom()
+    .then(() => {
+      setTimeout(() => {
+        room.stop()
+      }, 500);
+    });
   alert('Successfuly quit. The page will be reloaded.');
   window.location.reload();
 }
@@ -102,9 +120,9 @@ document.getElementById('chatsend').onclick = function() {
     sender: username,
     message: message
   })
-  .then(function(data) {
-    document.getElementById("chatbox").innerHTML += '<p>' + username + ' : ' + message + '</p><hr>';
-  });
+    .then(function(data) {
+      document.getElementById("chatbox").innerHTML += '<p>' + username + ' : ' + message + '</p><hr>';
+    });
 }
 
 window.localToggleMuteAudio = function() {

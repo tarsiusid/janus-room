@@ -51,6 +51,8 @@ room.init()
 - `room.sendMessage(data)` - Send message throught Janus's DataChannel (activated by default).
 - `room.attachStream(element, streamIndex)` - Attach a remote stream to a `<video>` element. Local stream is on 0.
 - `room.shareScreen()` - Share screen.
+- `room.createRoom({room:1337})` - Create new room.
+- `room.removeRoom()` - Remove current room.
 
 ### Events (passed as params)
 

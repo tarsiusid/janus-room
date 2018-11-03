@@ -2375,11 +2375,11 @@ function Janus(gatewayCallbacks) {
         // Check whether all media sources are actually available or not
         navigator.mediaDevices.enumerateDevices().then(function(devices) {
           var audioExist = devices.some(function(device) {
-              return device.kind === 'audioinput';
-            });
+            return device.kind === 'audioinput';
+          });
           var videoExist = isScreenSendEnabled(media) || devices.some(function(device) {
-              return device.kind === 'videoinput';
-            });
+            return device.kind === 'videoinput';
+          });
 
           // Check whether a missing device is really a problem
           var audioSend = isAudioSendEnabled(media);
