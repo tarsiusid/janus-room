@@ -37,11 +37,11 @@ function publishOwnFeed(opts, cb) {
         Janus.debug(jsep);
         var publish = {
           "request": "configure",
-          "token": config.token,
           "audio": opts.audioSend,
           "video": true,
           "data": true,
         };
+        if (config.token) publish.token = config.token;
         config.videoRoomHandler.send({
           "message": publish,
           "jsep": jsep
@@ -68,8 +68,8 @@ function unpublishOwnFeed() {
   // Unpublish our stream
   var unpublish = {
     "request": "unpublish",
-    "token": config.token,
   };
+  if (config.token) unpublish.token = config.token;
   config.videoRoomHandler.send({
     "message": unpublish
   });
@@ -91,11 +91,11 @@ function shareScreen(cb) {
         Janus.debug(jsep);
         var publish = {
           "request": "configure",
-          "token": config.token,
           "audio": true,
           "video": true,
           "data": true
         };
+        if (config.token) publish.token = config.token;
         config.isShareScreenActive = true;
         config.videoRoomHandler.send({
           "message": publish,
@@ -495,12 +495,12 @@ function newRemoteFeed(id, display, audio, video) {
         // We wait for the plugin to send us an offer
         var listen = {
           "request": "join",
-          "token": config.token,
           "room": config.room,
           "ptype": "subscriber",
           "feed": id,
           "private_id": config.mypvtid
         };
+        if (config.token) listen.token = config.token;
         // In case you don't want to receive audio, video or data, even if the
         // publisher is sending them, set the 'offer_audio', 'offer_video' or
         // 'offer_data' properties to false (they're true by default), e.g.:
@@ -522,8 +522,8 @@ function newRemoteFeed(id, display, audio, video) {
         // Setup DataChannel
         var body = {
           "request": "setup",
-          "token": config.token,
         }
+        if (config.token) body.token = config.token;
         pluginHandle.send({
           "message": body
         });
@@ -595,9 +595,9 @@ function newRemoteFeed(id, display, audio, video) {
                 Janus.debug(jsep);
                 var body = {
                   "request": "start",
-                  "token": config.token,
                   "room": config.room
                 };
+                if (config.token) body.token = config.token;
                 remoteFeed.send({
                   "message": body,
                   "jsep": jsep
@@ -726,11 +726,11 @@ class Room {
         config.room = options.room || room;
         var register = {
           "request": "join",
-          "token": config.token,
           "room": config.room,
           "ptype": "publisher",
           "display": config.username
         };
+        if (config.token) register.token = config.token;
         config.videoRoomHandler.send({
           "message": register
         });
@@ -858,9 +858,9 @@ class Room {
         // TODO handle room's secret
         var body = {
           "request": "create",
-          "token": config.token,
           "room": config.room,
         };
+        if (config.token) body.token = config.token;
         config.videoRoomHandler.send({
           "message": body,
         });
@@ -878,9 +878,9 @@ class Room {
         // TODO handle room's secret
         var body = {
           "request": "destroy",
-          "token": config.token,
           "room": config.room,
         };
+        if (config.token) body.token = config.token;
         config.videoRoomHandler.send({
           "message": body,
         });
