@@ -1,6 +1,10 @@
 const Janus = window.Janus = require('./janus');
 
-var config = { remotestreams: {}, feeds: [], bitrateTimer: [] }
+var config = {
+  remotestreams: {},
+  feeds: [],
+  bitrateTimer: []
+}
 
 // TODO Remove unused events / functions
 
@@ -16,7 +20,7 @@ function publishOwnFeed(opts, cb) {
   opts = opts || {}
   // Publish our stream
   config.isShareScreenActive = false;
-  config.handler.createOffer(
+  config.videoRoomHandler.createOffer(
     {
       // Add data:true here if you want to publish datachannels as well
       media: {
@@ -38,7 +42,7 @@ function publishOwnFeed(opts, cb) {
           "video": true,
           "data": true,
         };
-        config.handler.send({
+        config.videoRoomHandler.send({
           "message": publish,
           "jsep": jsep
         });
@@ -66,14 +70,14 @@ function unpublishOwnFeed() {
     "request": "unpublish",
     "token": config.token,
   };
-  config.handler.send({
+  config.videoRoomHandler.send({
     "message": unpublish
   });
 }
 
 function shareScreen(cb) {
   // Publish our stream
-  config.handler.createOffer(
+  config.videoRoomHandler.createOffer(
     {
       // Add data:true here if you want to publish datachannels as well
       media: {
@@ -93,7 +97,7 @@ function shareScreen(cb) {
           "data": true
         };
         config.isShareScreenActive = true;
-        config.handler.send({
+        config.videoRoomHandler.send({
           "message": publish,
           "jsep": jsep
         });
@@ -106,6 +110,59 @@ function shareScreen(cb) {
       }
     });
 }
+
+function startRecording(options) {
+  config.recordPlayHandler.send({
+    'message': {
+      'request': 'configure',
+      'video-bitrate-max': 1024 * 1024, // a quarter megabit
+      'video-keyframe-interval': 15000 // 15 seconds
+    }
+  });
+  config.recordPlayHandler.createOffer(
+    {
+      // By default, it's sendrecv for audio and video... no datachannels
+      // If you want to test simulcasting (Chrome and Firefox only), then
+      // pass a ?simulcast=true when opening this demo page: it will turn
+      // the following 'simulcast' property to pass to janus.js to true
+      simulcast: doSimulcast,
+      success: function(jsep) {
+        Janus.debug("Got SDP!");
+        Janus.debug(jsep);
+        var body = {
+          "request": "record",
+          "name": options.name || 'janus-room-test-' + (new Date()).valueOf(),
+        };
+        config.recordPlayHandler.send({
+          "message": body,
+          "jsep": jsep
+        });
+      },
+      error: function(error) {
+        Janus.error("WebRTC error...", error);
+        bootbox.alert("WebRTC error... " + error);
+        config.recordPlayHandler.hangup();
+      }
+    });
+}
+
+function stopPlayback() {
+  return new Promise((resolve, reject) => {
+    var stop = {
+      "request": "stop",
+    };
+    config.recordPlayHandler.send({
+      "message": stop,
+      success: function() {
+        resolve();
+      },
+      error: function(err) {
+        reject(err);
+      }
+    });
+  });
+}
+
 function start() {
   return new Promise((resolve, reject) => {
     try {
@@ -120,14 +177,15 @@ function start() {
           server: config.server,
           token: config.token,
           success: function() {
-            // Attach to video room test plugin
+
+            // Attach to video room plugin
             config.janus.attach(
               {
                 plugin: "janus.plugin.videoroom",
                 opaqueId: config.opaqueId,
                 success: function(pluginHandle) {
-                  config.handler = pluginHandle;
-                  Janus.log("Plugin attached! (" + config.handler.getPlugin() + ", id=" + config.handler.getId() + ")");
+                  config.videoRoomHandler = pluginHandle;
+                  Janus.log("Plugin attached! (" + config.videoRoomHandler.getPlugin() + ", id=" + config.videoRoomHandler.getId() + ")");
                   Janus.log("  -- This is a publisher/manager");
                   resolve();
                 },
@@ -224,7 +282,7 @@ function start() {
                         Janus.log("Publisher left: " + unpublished);
                         if (unpublished === 'ok') {
                           // That's us
-                          config.handler.hangup();
+                          config.videoRoomHandler.hangup();
                           return;
                         }
                         var remoteFeed = null;
@@ -251,7 +309,7 @@ function start() {
                   if (jsep !== undefined && jsep !== null) {
                     Janus.debug("Handling SDP as well...");
                     Janus.debug(jsep);
-                    config.handler.handleRemoteJsep({
+                    config.videoRoomHandler.handleRemoteJsep({
                       jsep: jsep
                     });
                     // Check if any of the media we wanted to publish has
@@ -286,6 +344,126 @@ function start() {
                   config.mystream = null;
                 }
               });
+
+            if (config.useRecordPlugin) {
+              // Attach to config.recordPlayHandler plugin
+              config.janus.attach(
+                {
+                  plugin: "janus.plugin.recordplay",
+                  opaqueId: config.opaqueId,
+                  success: function(pluginHandle) {
+                    config.recordPlayHandler = pluginHandle;
+                    Janus.log("Plugin attached! (" + config.recordPlayHandler.getPlugin() + ", id=" + config.recordPlayHandler.getId() + ")");
+                  // Now ready for recording. See startRecording()
+                  },
+                  error: function(error) {
+                    Janus.error("  -- Error attaching plugin...", error);
+                    onError(error)
+                  },
+                  consentDialog: function(on) {
+                    // Handle consentDialog
+                  },
+                  webrtcState: function(on) {
+                    Janus.log("Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
+                  },
+                  onmessage: function(msg, jsep) {
+                    Janus.debug(" ::: Got a message :::");
+                    Janus.debug(msg);
+                    var result = msg["result"];
+                    if (result !== null && result !== undefined) {
+                      if (result["status"] !== undefined && result["status"] !== null) {
+                        var event = result["status"];
+                        if (event === 'preparing' || event === 'refreshing') {
+                          Janus.log("Preparing the recording playout");
+                          config.recordPlayHandler.createAnswer(
+                            {
+                              jsep: jsep,
+                              media: {
+                                audioSend: false,
+                                videoSend: false
+                              }, // We want recvonly audio/video
+                              success: function(jsep) {
+                                Janus.debug("Got SDP!");
+                                Janus.debug(jsep);
+                                var body = {
+                                  "request": "start"
+                                };
+                                config.recordPlayHandler.send({
+                                  "message": body,
+                                  "jsep": jsep
+                                });
+                              },
+                              error: function(error) {
+                                Janus.error("WebRTC error:", error);
+                                alert(JSON.stringify(error));
+                              }
+                            });
+                          if (result["warning"]) {
+                            alert(result["warning"]);
+                          }
+                        } else if (event === 'recording') {
+                          // Got an ANSWER to our recording OFFER
+                          if (jsep !== null && jsep !== undefined) {
+                            config.recordPlayHandler.handleRemoteJsep({
+                              jsep: jsep
+                            });
+                          }
+                          var id = result["id"];
+                          if (id !== null && id !== undefined) {
+                            Janus.log("The ID of the current recording is " + id);
+                            config.recordingId = id;
+                          }
+                        } else if (event === 'slow_link') {
+                          var uplink = result["uplink"];
+                          if (uplink !== 0) {
+                            // Janus detected issues when receiving our media, let's slow down
+                            let bandwidth = parseInt(bandwidth / 1.5);
+                            config.recordPlayHandler.send({
+                              'message': {
+                                'request': 'configure',
+                                'video-bitrate-max': bandwidth, // Reduce the bitrate
+                                'video-keyframe-interval': 15000 // Keep the 15 seconds key frame interval
+                              }
+                            });
+                          }
+                        } else if (event === 'stopped') {
+                          Janus.log("Session has stopped!");
+                          var id = result["id"];
+                          if (config.recordingId !== null && config.recordingId !== undefined) {
+                            if (config.recordingId !== id) {
+                              Janus.warn("Not a stop to our recording?");
+                              return;
+                            }
+                            alert('Recording completed! Check the list of recordings to replay it.')
+                          }
+                        // TODO reset recording session
+                        }
+                      }
+                    } else {
+                      // FIXME Error?
+                      var error = msg["error"];
+                      alert(error)
+                    //updateRecsList();
+                    }
+                  },
+                  onlocalstream: function(stream) {
+                    Janus.debug(" ::: Got a local stream :::");
+                    Janus.debug(stream);
+                    config.onRecordedPlay()
+                  },
+                  onremotestream: function(stream) {
+                    config.recordedplaystream = stream;
+                    Janus.debug(" ::: Got a remote stream :::");
+                    Janus.debug(stream);
+                    config.onRecordedPlay()
+                  },
+                  oncleanup: function() {
+                    Janus.log(" ::: Got a cleanup notification :::");
+                  // TODO reset recording session
+                  }
+                });
+
+            }
           },
           error: function(error) {
             Janus.error(error);
@@ -471,16 +649,22 @@ class Room {
 
   constructor(options) {
     // Make sure the entire configuration get flushed first
-    config = { remotestreams: {}, feeds: [], bitrateTimer: [] }
+    config = {
+      remotestreams: {},
+      feeds: [],
+      bitrateTimer: []
+    }
     // Assign the values
     config.server = options.server || null;
     config.opaqueId = "videoroomtest-" + Janus.randomString(12);
     config.room = options.room || null;
     config.extensionId = options.extensionId || null;
     config.token = options.token || null;
+    config.useRecordPlugin = options.useRecordPlugin || false;
     config.onLocalJoin = options.onLocalJoin || null;
     config.onRemoteJoin = options.onRemoteJoin || null;
     config.onRemoteUnjoin = options.onRemoteUnjoin || null;
+    config.onRecordedPlay = options.onRecordedPlay || null;
     config.onMessage = options.onMessage || null;
     config.onDestroyed = options.onDestroyed || null;
     config.onError = options.onError || null;
@@ -514,6 +698,7 @@ class Room {
 
   stop() {
     if (config.janus) {
+      this.stopRecording();
       // Make sure the webcam and microphone got turned off first
       if (config.mystream) {
         let tracks = config.mystream.getTracks();
@@ -545,7 +730,7 @@ class Room {
           "ptype": "publisher",
           "display": config.username
         };
-        config.handler.send({
+        config.videoRoomHandler.send({
           "message": register
         });
         resolve();
@@ -558,14 +743,14 @@ class Room {
   toggleMuteAudio() {
     return new Promise((resolve, reject) => {
       try {
-        let muted = config.handler.isAudioMuted();
+        let muted = config.videoRoomHandler.isAudioMuted();
         Janus.log((muted ? "Unmuting" : "Muting") + " local stream...");
         if (muted) {
-          config.handler.unmuteAudio();
+          config.videoRoomHandler.unmuteAudio();
         } else {
-          config.handler.muteAudio();
+          config.videoRoomHandler.muteAudio();
         }
-        resolve(config.handler.isAudioMuted());
+        resolve(config.videoRoomHandler.isAudioMuted());
       } catch ( err ) {
         reject(err);
       }
@@ -575,14 +760,14 @@ class Room {
   toggleMuteVideo() {
     return new Promise((resolve, reject) => {
       try {
-        let muted = config.handler.isVideoMuted();
+        let muted = config.videoRoomHandler.isVideoMuted();
         Janus.log((muted ? "Unmuting" : "Muting") + " local stream...");
         if (muted) {
-          config.handler.unmuteVideo();
+          config.videoRoomHandler.unmuteVideo();
         } else {
-          config.handler.muteVideo();
+          config.videoRoomHandler.muteVideo();
         }
-        resolve(config.handler.isVideoMuted());
+        resolve(config.videoRoomHandler.isVideoMuted());
       } catch ( err ) {
         reject(err);
       }
@@ -592,7 +777,7 @@ class Room {
   sendMessage(data) {
     return new Promise((resolve, reject) => {
       try {
-        config.handler.data({
+        config.videoRoomHandler.data({
           text: JSON.stringify(data),
           success: function() {
             resolve(data);
@@ -615,6 +800,17 @@ class Room {
         } else {
           Janus.attachMediaStream(target, config.remotestreams[index]);
         }
+        resolve();
+      } catch ( err ) {
+        reject(err);
+      }
+    });
+  }
+
+  attachRecordedPlayStream(target) {
+    return new Promise((resolve, reject) => {
+      try {
+        Janus.attachMediaStream(target, config.recordedplaystream);
         resolve();
       } catch ( err ) {
         reject(err);
@@ -664,7 +860,7 @@ class Room {
           "token": config.token,
           "room": config.room,
         };
-        config.handler.send({
+        config.videoRoomHandler.send({
           "message": body,
         });
         // TODO catch the response
@@ -684,12 +880,100 @@ class Room {
           "token": config.token,
           "room": config.room,
         };
-        config.handler.send({
+        config.videoRoomHandler.send({
           "message": body,
         });
         resolve();
       } catch ( err ) {
         reject(err);
+      }
+    });
+  }
+
+  getRecordedList() {
+    return new Promise((resolve, reject) => {
+      var body = {
+        "request": "list"
+      };
+      Janus.debug("Sending message (" + JSON.stringify(body) + ")");
+      config.recordPlayHandler.send({
+        "message": body,
+        success: function(result) {
+          resolve(result);
+        },
+        error: function(err) {
+          reject(err);
+        }
+      });
+    });
+  }
+
+  stopPlayback() {
+    return stopPlayback()
+  }
+
+  recordedPlayback(recordId) {
+    return new Promise((resolve, reject) => {
+      var play = {
+        "request": "play",
+        "id": parseInt(recordId, 10)
+      };
+      if (config.recordedplaystream) {
+        let tracks = config.recordedplaystream.getTracks();
+        for (let i in tracks) {
+          if (tracks[i]) {
+            tracks[i].stop();
+          }
+        }
+        config.recordedplaystream = null;
+        stopPlayback()
+          .then(() => {
+            config.recordPlayHandler.send({
+              "message": play,
+              success: function() {
+                resolve();
+              },
+              error: function(err) {
+                reject(err);
+              }
+            });
+          })
+          .catch((err) => {
+            reject(err);
+          });
+      } else {
+        config.recordPlayHandler.send({
+          "message": play,
+          success: function() {
+            resolve();
+          },
+          error: function(err) {
+            reject(err);
+          }
+        });
+      }
+    });
+  }
+
+  startRecording(options) {
+    return startRecording(options)
+  }
+
+  stopRecording() {
+    return new Promise((resolve, reject) => {
+      if (config.recordPlayHandler) {
+        var stop = {
+          "request": "stop"
+        };
+        config.recordPlayHandler.send({
+          "message": stop,
+          success: function() {
+            resolve();
+          },
+          error: function(err) {
+            reject(err);
+          }
+        });
       }
     });
   }
