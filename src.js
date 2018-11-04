@@ -722,8 +722,8 @@ class Room {
         if (!options || (options && !options.room)) {
           throw 'room value is needed.';
         }
-        config.username = options.username || username;
-        config.room = options.room || room;
+        config.username = options.username || config.username;
+        config.room = options.room || config.room;
         var register = {
           "request": "join",
           "room": config.room,
@@ -854,7 +854,7 @@ class Room {
     return new Promise((resolve, reject) => {
       try {
         options = options || {}
-        room = options.room || null
+        config.room = options.room || null
         // TODO handle room's secret
         var body = {
           "request": "create",
