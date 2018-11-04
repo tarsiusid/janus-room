@@ -1,7 +1,7 @@
 window.Room = require('./src');
 
 var room;
-var server = 'https://localhost:8089/janus';
+var server = 'http://localhost:8088/janus';
 var roomId = 1337; // Demo room
 var username = window.prompt('username : ');
 if (!username) {
@@ -13,7 +13,9 @@ document.getElementById('username').innerHTML = username;
 var onError = function(err) {
   if (err.indexOf('The room is unavailable') > -1) {
     alert('Room ' + roomId + ' is unavailable. Let\'s create one.');
-    room.createRoom({room:roomId})
+    room.createRoom({
+      room: roomId
+    })
       .then(() => {
         setTimeout(function() {
           room.register({
@@ -50,6 +52,14 @@ var onRemoteUnjoin = function(index) {
   document.getElementById('videoremote' + index).innerHTML = '<div>videoremote' + index + '</div>';
 }
 
+var onRecordedPlay = function() {
+  var htmlStr = '<div>playback</div>';
+  htmlStr += '<video id="playback" style="width:inherit;" autoplay muted="muted"/>';
+  document.getElementById('videoplayback').innerHTML = htmlStr;
+  let target = document.getElementById('playback');
+  room.attachRecordedPlayStream(target);
+}
+
 var onMessage = function(data) {
   if (!data) {
     return;
@@ -67,9 +77,12 @@ var options = {
   room: roomId,
   token: 'a1b2c3d4',
   extensionId: 'bkkjmbohcfkfemepmepailpamnppmjkk',
+  useRecordPlugin: true,
   onLocalJoin: onLocalJoin,
   onRemoteJoin: onRemoteJoin,
   onRemoteUnjoin: onRemoteUnjoin,
+  onRecordedPlay: onRecordedPlay,
+  onMessage: onMessage,
   onError: onError,
 }
 
@@ -123,6 +136,46 @@ document.getElementById('chatsend').onclick = function() {
     .then(function(data) {
       document.getElementById("chatbox").innerHTML += '<p>' + username + ' : ' + message + '</p><hr>';
     });
+}
+
+document.getElementById('getrecordedlist').onclick = function() {
+  room.getRecordedList()
+    .then((result) => {
+      console.log(result);
+      if (result && result.list && result.list.length > 0) {
+        let recordedListElement = document.getElementById('recordedlist');
+        recordedListElement.innerHTML = '';
+        for (let i in result.list) {
+          recordedListElement.innerHTML += '<a href="#" onClick="recordedPlayback(' + result.list[i].id + ')">' + result.list[i].name + '</a><br>';
+
+
+        }
+      }
+    })
+    .catch((err) => {
+      alert(err);
+    });
+}
+
+document.getElementById('stoprecording').onclick = function() {
+  room.stopRecording()
+    .then(function() {
+      alert('Recording is being stopped.')
+    })
+    .catch((err) => {
+      alert(err);
+    });
+}
+
+document.getElementById('startrecording').onclick = function() {
+  let recordName = window.prompt('Record name : ');
+  room.startRecording({
+    name: recordName
+  });
+}
+
+window.recordedPlayback = function(recordId) {
+  room.recordedPlayback(recordId);
 }
 
 window.localToggleMuteAudio = function() {

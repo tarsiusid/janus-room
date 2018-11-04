@@ -8,6 +8,8 @@ margin:5px;border:1px solid grey;height:300px;width:300px;display:inline-block;v
 <button type="button" id="register">Join</button>
 <button type="button" id="stop">Quit</button>
 <button type="button" id="sharescreen">Share screen</button>
+<button type="button" id="startrecording">Start recording</button>
+<button type="button" id="stoprecording">Stop recording</button>
 <hr>
 <div>
 <div class="videoscreen" id="videolocal">videolocal</div>
@@ -17,6 +19,12 @@ margin:5px;border:1px solid grey;height:300px;width:300px;display:inline-block;v
 <div class="videoscreen" id="videoremote4">videoremote4</div>
 </div>
 <hr>
+<h1>Recorded list</h1>
+<div class="videoscreen" id="videoplayback">videolocal</div>
+<br><button type="button" id="getrecordedlist">Get recorded list</button>
+<div id="recordedlist"></div>
+<hr>
+<h1>Chat</h1>
 <div id="chatbox"></div>
 <input id="chatinput"/><button id="chatsend">Send</button>
 
