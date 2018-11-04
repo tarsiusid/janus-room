@@ -33,7 +33,8 @@ var room = new Room(options);
 room.init()
 .then(function(){
   room.register({
-    username:username // required
+    room: roomId,
+    username: username
   });
 })
 .catch(function(err){
@@ -43,7 +44,8 @@ room.init()
 
 ### Methods
 
-- `room.initt()` - Initialize the session.
+- `room.init()` - Initialize the session.
+- `room.register({room: roomId, username: username})` - Join to the room as usernam.
 - `room.toggleMuteAudio()` - Toggle local mic.
 - `room.toggleMuteVideo()` - Toggle local video stream.
 - `room.sendMessage(data)` - Send message throught Janus's DataChannel (activated by default).

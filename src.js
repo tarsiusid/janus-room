@@ -1,31 +1,8 @@
 const Janus = window.Janus = require('./janus');
 
-// TODO These values intended to be tied in the class 
-// but the nested events in Janus lib make this difficult to implement, so yeah..
-var opaqueId = "videoroomtest-" + Janus.randomString(12);
-var server = null;
-var room = null;
-var username = null;
-var janus = null;
-var handler = null;
-var myid = null;
-var mystream = null;
-var remotestreams = {};
-var mypvtid = null;
-var feeds = [];
-var bitrateTimer = [];
-var onLocalJoin = null;
-var onRemoteJoin = null;
-var onRemoteUnjoin = null;
-var onMessage = null;
-var onDestroyed = null;
-var onError = null;
-var isShareScreenActive = false;
-var extensionId = null;
-var token = null;
+var config = { remotestreams: {}, feeds: [], bitrateTimer: [] }
 
 // TODO Remove unused events / functions
-// TODO In promise func, catch any possible errors and pass it to reject()
 
 // Helpers
 function getQueryStringValue(name) {
@@ -38,8 +15,8 @@ function getQueryStringValue(name) {
 function publishOwnFeed(opts, cb) {
   opts = opts || {}
   // Publish our stream
-  isShareScreenActive = false;
-  handler.createOffer(
+  config.isShareScreenActive = false;
+  config.handler.createOffer(
     {
       // Add data:true here if you want to publish datachannels as well
       media: {
@@ -56,12 +33,12 @@ function publishOwnFeed(opts, cb) {
         Janus.debug(jsep);
         var publish = {
           "request": "configure",
-          "token": token,
+          "token": config.token,
           "audio": opts.audioSend,
           "video": true,
           "data": true,
         };
-        handler.send({
+        config.handler.send({
           "message": publish,
           "jsep": jsep
         });
@@ -76,7 +53,7 @@ function publishOwnFeed(opts, cb) {
             audioSend: false
           });
         } else {
-          onError("WebRTC error... " + JSON.stringify(error));
+          config.onError("WebRTC error... " + JSON.stringify(error));
         }
       }
     });
@@ -87,16 +64,16 @@ function unpublishOwnFeed() {
   // Unpublish our stream
   var unpublish = {
     "request": "unpublish",
-    "token": token,
+    "token": config.token,
   };
-  handler.send({
+  config.handler.send({
     "message": unpublish
   });
 }
 
 function shareScreen(cb) {
   // Publish our stream
-  handler.createOffer(
+  config.handler.createOffer(
     {
       // Add data:true here if you want to publish datachannels as well
       media: {
@@ -110,13 +87,13 @@ function shareScreen(cb) {
         Janus.debug(jsep);
         var publish = {
           "request": "configure",
-          "token": token,
+          "token": config.token,
           "audio": true,
           "video": true,
           "data": true
         };
-        isShareScreenActive = true;
-        handler.send({
+        config.isShareScreenActive = true;
+        config.handler.send({
           "message": publish,
           "jsep": jsep
         });
@@ -134,29 +111,29 @@ function start() {
     try {
       // Make sure the browser supports WebRTC
       if (!Janus.isWebrtcSupported()) {
-        onError("No WebRTC support... ");
+        config.onError("No WebRTC support... ");
         return;
       }
       // Create session
-      janus = new Janus(
+      config.janus = new Janus(
         {
-          server: server,
-          token: token,
+          server: config.server,
+          token: config.token,
           success: function() {
             // Attach to video room test plugin
-            janus.attach(
+            config.janus.attach(
               {
                 plugin: "janus.plugin.videoroom",
-                opaqueId: opaqueId,
+                opaqueId: config.opaqueId,
                 success: function(pluginHandle) {
-                  handler = pluginHandle;
-                  Janus.log("Plugin attached! (" + handler.getPlugin() + ", id=" + handler.getId() + ")");
+                  config.handler = pluginHandle;
+                  Janus.log("Plugin attached! (" + config.handler.getPlugin() + ", id=" + config.handler.getId() + ")");
                   Janus.log("  -- This is a publisher/manager");
                   resolve();
                 },
                 error: function(error) {
                   Janus.error("  -- Error attaching plugin...", error);
-                  onError("Error attaching plugin... " + error);
+                  config.onError("Error attaching plugin... " + error);
                 },
                 consentDialog: function(on) {
                   Janus.debug("Consent dialog should be " + (on ? "on" : "off") + " now");
@@ -168,7 +145,7 @@ function start() {
                 },
                 mediaState: function(medium, on) {
                   Janus.log("Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
-                  if (medium === 'video' && !on && isShareScreenActive && !mystream.active) {
+                  if (medium === 'video' && !on && config.isShareScreenActive && !config.mystream.active) {
                     console.log('Put back the webcam');
                     publishOwnFeed({
                       audioSend: true,
@@ -185,11 +162,11 @@ function start() {
                   var event = msg["videoroom"];
                   Janus.debug("Event: " + event);
                   if (event != undefined && event != null) {
-                    if (event === "joined" && !isShareScreenActive) {
+                    if (event === "joined" && !config.isShareScreenActive) {
                       // Publisher/manager created, negotiate WebRTC and attach to existing feeds, if any
-                      myid = msg["id"];
-                      mypvtid = msg["private_id"];
-                      Janus.log("Successfully joined room " + msg["room"] + " with ID " + myid);
+                      config.myid = msg["id"];
+                      config.mypvtid = msg["private_id"];
+                      Janus.log("Successfully joined room " + msg["room"] + " with ID " + config.myid);
                       publishOwnFeed({
                         audioSend: true
                       });
@@ -210,7 +187,7 @@ function start() {
                     } else if (event === "destroyed") {
                       // The room has been destroyed
                       Janus.warn("The room has been destroyed!");
-                      onDestroyed();
+                      config.onDestroyed();
                     } else if (event === "event") {
                       // Any new feed to attach to?
                       if (msg["publishers"] !== undefined && msg["publishers"] !== null) {
@@ -231,14 +208,14 @@ function start() {
                         Janus.log("Publisher left: " + leaving);
                         var remoteFeed = null;
                         for (var i = 1; i < 6; i++) {
-                          if (feeds[i] != null && feeds[i] != undefined && feeds[i].rfid == leaving) {
-                            remoteFeed = feeds[i];
+                          if (config.feeds[i] != null && config.feeds[i] != undefined && config.feeds[i].rfid == leaving) {
+                            remoteFeed = config.feeds[i];
                             break;
                           }
                         }
                         if (remoteFeed != null) {
                           Janus.debug("Feed " + remoteFeed.rfid + " (" + remoteFeed.rfdisplay + ") has left the room, detaching");
-                          feeds[remoteFeed.rfindex] = null;
+                          config.feeds[remoteFeed.rfindex] = null;
                           remoteFeed.detach();
                         }
                       } else if (msg["unpublished"] !== undefined && msg["unpublished"] !== null) {
@@ -247,26 +224,26 @@ function start() {
                         Janus.log("Publisher left: " + unpublished);
                         if (unpublished === 'ok') {
                           // That's us
-                          handler.hangup();
+                          config.handler.hangup();
                           return;
                         }
                         var remoteFeed = null;
                         for (var i = 1; i < 6; i++) {
-                          if (feeds[i] != null && feeds[i] != undefined && feeds[i].rfid == unpublished) {
-                            remoteFeed = feeds[i];
+                          if (config.feeds[i] != null && config.feeds[i] != undefined && config.feeds[i].rfid == unpublished) {
+                            remoteFeed = config.feeds[i];
                             break;
                           }
                         }
                         if (remoteFeed != null) {
                           Janus.debug("Feed " + remoteFeed.rfid + " (" + remoteFeed.rfdisplay + ") has left the room, detaching");
-                          feeds[remoteFeed.rfindex] = null;
+                          config.feeds[remoteFeed.rfindex] = null;
                           remoteFeed.detach();
                         }
                       } else if (msg["error"] !== undefined && msg["error"] !== null) {
                         if (msg["error_code"] === 426) {
-                          onError('The room is unavailable. Please create one.');
+                          config.onError('The room is unavailable. Please create one.');
                         } else {
-                          onError(msg["error"]);
+                          config.onError(msg["error"]);
                         }
                       }
                     }
@@ -274,18 +251,18 @@ function start() {
                   if (jsep !== undefined && jsep !== null) {
                     Janus.debug("Handling SDP as well...");
                     Janus.debug(jsep);
-                    handler.handleRemoteJsep({
+                    config.handler.handleRemoteJsep({
                       jsep: jsep
                     });
                     // Check if any of the media we wanted to publish has
                     // been rejected (e.g., wrong or unsupported codec)
                     var audio = msg["audio_codec"];
-                    if (mystream && mystream.getAudioTracks() && mystream.getAudioTracks().length > 0 && !audio) {
+                    if (config.mystream && config.mystream.getAudioTracks() && config.mystream.getAudioTracks().length > 0 && !audio) {
                       // Audio has been rejected
                       toastr.warning("Our audio stream has been rejected, viewers won't hear us");
                     }
                     var video = msg["video_codec"];
-                    if (mystream && mystream.getVideoTracks() && mystream.getVideoTracks().length > 0 && !video) {
+                    if (config.mystream && config.mystream.getVideoTracks() && config.mystream.getVideoTracks().length > 0 && !video) {
                       // Video has been rejected
                       toastr.warning("Our video stream has been rejected, viewers won't see us");
                     // Hide the webcam video
@@ -294,9 +271,9 @@ function start() {
                 },
                 onlocalstream: function(stream) {
                   Janus.debug(" ::: Got a local stream :::");
-                  mystream = window.mystream = stream; // attach to global for debugging purpose
+                  config.mystream = window.mystream = stream; // attach to global for debugging purpose
                   Janus.debug(stream);
-                  onLocalJoin();
+                  config.onLocalJoin();
                 },
                 onremotestream: function(stream) {
                   // The publisher stream is sendonly, we don't expect anything here
@@ -306,7 +283,7 @@ function start() {
                 },
                 oncleanup: function() {
                   Janus.log(" ::: Got a cleanup notification: we are unpublished now :::");
-                  this.mystream = null;
+                  config.mystream = null;
                 }
               });
           },
@@ -328,10 +305,10 @@ function start() {
 function newRemoteFeed(id, display, audio, video) {
   // A new feed has been published, create a new plugin handle and attach to it as a subscriber
   var remoteFeed = null;
-  janus.attach(
+  config.janus.attach(
     {
       plugin: "janus.plugin.videoroom",
-      opaqueId: opaqueId,
+      opaqueId: config.opaqueId,
       success: function(pluginHandle) {
         remoteFeed = pluginHandle;
         remoteFeed.simulcastStarted = false;
@@ -340,11 +317,11 @@ function newRemoteFeed(id, display, audio, video) {
         // We wait for the plugin to send us an offer
         var listen = {
           "request": "join",
-          "token": token,
-          "room": room,
+          "token": config.token,
+          "room": config.room,
           "ptype": "subscriber",
           "feed": id,
-          "private_id": mypvtid
+          "private_id": config.mypvtid
         };
         // In case you don't want to receive audio, video or data, even if the
         // publisher is sending them, set the 'offer_audio', 'offer_video' or
@@ -367,7 +344,7 @@ function newRemoteFeed(id, display, audio, video) {
         // Setup DataChannel
         var body = {
           "request": "setup",
-          "token": token,
+          "token": config.token,
         }
         pluginHandle.send({
           "message": body
@@ -376,7 +353,7 @@ function newRemoteFeed(id, display, audio, video) {
       },
       error: function(error) {
         Janus.error("  -- Error attaching plugin...", error);
-        onError("Error attaching plugin... " + error);
+        config.onError("Error attaching plugin... " + error);
       },
       onmessage: function(msg, jsep) {
         Janus.debug(" ::: Got a message (subscriber) :::");
@@ -384,13 +361,13 @@ function newRemoteFeed(id, display, audio, video) {
         var event = msg["videoroom"];
         Janus.debug("Event: " + event);
         if (msg["error"] !== undefined && msg["error"] !== null) {
-          onError(msg["error"]);
+          config.onError(msg["error"]);
         } else if (event != undefined && event != null) {
           if (event === "attached") {
             // Subscriber created and attached
             for (var i = 1; i < 6; i++) {
-              if (feeds[i] === undefined || feeds[i] === null) {
-                feeds[i] = remoteFeed;
+              if (config.feeds[i] === undefined || config.feeds[i] === null) {
+                config.feeds[i] = remoteFeed;
                 remoteFeed.rfindex = i;
                 break;
               }
@@ -440,8 +417,8 @@ function newRemoteFeed(id, display, audio, video) {
                 Janus.debug(jsep);
                 var body = {
                   "request": "start",
-                  "token": token,
-                  "room": room
+                  "token": config.token,
+                  "room": config.room
                 };
                 remoteFeed.send({
                   "message": body,
@@ -450,7 +427,7 @@ function newRemoteFeed(id, display, audio, video) {
               },
               error: function(error) {
                 Janus.error("WebRTC error:", error);
-                onError("WebRTC error... " + JSON.stringify(error));
+                config.onError("WebRTC error... " + JSON.stringify(error));
               }
             });
         }
@@ -464,17 +441,17 @@ function newRemoteFeed(id, display, audio, video) {
       ondata: function(data) {
         try {
           data = JSON.parse(data);
-          onMessage(data);
+          config.onMessage(data);
         } catch ( err ) {
-          onMessage({
+          config.onMessage({
             error: `Failed to parse JSON : ${err}`
           });
         }
       },
       onremotestream: function(stream) {
         Janus.debug("Remote feed #" + remoteFeed.rfindex);
-        remotestreams[remoteFeed.rfindex] = stream;
-        onRemoteJoin(remoteFeed.rfindex, remoteFeed.rfdisplay);
+        config.remotestreams[remoteFeed.rfindex] = stream;
+        config.onRemoteJoin(remoteFeed.rfindex, remoteFeed.rfdisplay);
       },
       oncleanup: function() {
         Janus.log(" ::: Got a cleanup notification (remote feed " + id + ") :::");
@@ -482,8 +459,8 @@ function newRemoteFeed(id, display, audio, video) {
           remoteFeed.spinner.stop();
         }
         remoteFeed.spinner = null;
-        delete (remotestreams[remoteFeed.rfindex]);
-        onRemoteUnjoin(remoteFeed.rfindex, remoteFeed.rfdisplay);
+        delete (config.remotestreams[remoteFeed.rfindex]);
+        config.onRemoteUnjoin(remoteFeed.rfindex, remoteFeed.rfdisplay);
       }
     });
 }
@@ -493,29 +470,32 @@ var doSimulcast = (getQueryStringValue("simulcast") === "yes" || getQueryStringV
 class Room {
 
   constructor(options) {
-    server = options.server || null;
-    opaqueId = "videoroomtest-" + Janus.randomString(12);
-    room = options.room || null;
-    extensionId = options.extensionId || null;
-    token = options.token || null;
-    onLocalJoin = options.onLocalJoin || null;
-    onRemoteJoin = options.onRemoteJoin || null;
-    onRemoteUnjoin = options.onRemoteUnjoin || null;
-    onMessage = options.onMessage || null;
-    onDestroyed = options.onDestroyed || null;
-    onError = options.onError || null;
+    // Make sure the entire configuration get flushed first
+    config = { remotestreams: {}, feeds: [], bitrateTimer: [] }
+    // Assign the values
+    config.server = options.server || null;
+    config.opaqueId = "videoroomtest-" + Janus.randomString(12);
+    config.room = options.room || null;
+    config.extensionId = options.extensionId || null;
+    config.token = options.token || null;
+    config.onLocalJoin = options.onLocalJoin || null;
+    config.onRemoteJoin = options.onRemoteJoin || null;
+    config.onRemoteUnjoin = options.onRemoteUnjoin || null;
+    config.onMessage = options.onMessage || null;
+    config.onDestroyed = options.onDestroyed || null;
+    config.onError = options.onError || null;
   }
 
 
   init() {
     return new Promise((resolve, reject) => {
       try {
-        if (!server) {
+        if (!config.server) {
           throw 'server value is needed.';
         }
         Janus.init({
           debug: "all",
-          extensionId: extensionId,
+          extensionId: config.extensionId,
           callback: function() {
             start()
               .then(() => {
@@ -533,10 +513,10 @@ class Room {
   }
 
   stop() {
-    if (janus) {
+    if (config.janus) {
       // Make sure the webcam and microphone got turned off first
-      if (mystream) {
-        let tracks = mystream.getTracks();
+      if (config.mystream) {
+        let tracks = config.mystream.getTracks();
         for (let i in tracks) {
           if (tracks[i]) {
             tracks[i].stop();
@@ -544,7 +524,7 @@ class Room {
         }
       }
       // Destroy the session
-      janus.destroy();
+      config.janus.destroy();
     }
   }
 
@@ -557,15 +537,15 @@ class Room {
         if (!options || (options && !options.room)) {
           throw 'room value is needed.';
         }
-        username = options.username;
+        config.username = options.username;
         var register = {
           "request": "join",
-          "token": token,
-          "room": room,
+          "token": config.token,
+          "room": config.room,
           "ptype": "publisher",
-          "display": username
+          "display": config.username
         };
-        handler.send({
+        config.handler.send({
           "message": register
         });
         resolve();
@@ -578,14 +558,14 @@ class Room {
   toggleMuteAudio() {
     return new Promise((resolve, reject) => {
       try {
-        let muted = handler.isAudioMuted();
+        let muted = config.handler.isAudioMuted();
         Janus.log((muted ? "Unmuting" : "Muting") + " local stream...");
         if (muted) {
-          handler.unmuteAudio();
+          config.handler.unmuteAudio();
         } else {
-          handler.muteAudio();
+          config.handler.muteAudio();
         }
-        resolve(handler.isAudioMuted());
+        resolve(config.handler.isAudioMuted());
       } catch ( err ) {
         reject(err);
       }
@@ -595,14 +575,14 @@ class Room {
   toggleMuteVideo() {
     return new Promise((resolve, reject) => {
       try {
-        let muted = handler.isVideoMuted();
+        let muted = config.handler.isVideoMuted();
         Janus.log((muted ? "Unmuting" : "Muting") + " local stream...");
         if (muted) {
-          handler.unmuteVideo();
+          config.handler.unmuteVideo();
         } else {
-          handler.muteVideo();
+          config.handler.muteVideo();
         }
-        resolve(handler.isVideoMuted());
+        resolve(config.handler.isVideoMuted());
       } catch ( err ) {
         reject(err);
       }
@@ -612,7 +592,7 @@ class Room {
   sendMessage(data) {
     return new Promise((resolve, reject) => {
       try {
-        handler.data({
+        config.handler.data({
           text: JSON.stringify(data),
           success: function() {
             resolve(data);
@@ -631,9 +611,9 @@ class Room {
     return new Promise((resolve, reject) => {
       try {
         if (index === 0) {
-          Janus.attachMediaStream(target, mystream);
+          Janus.attachMediaStream(target, config.mystream);
         } else {
-          Janus.attachMediaStream(target, remotestreams[index]);
+          Janus.attachMediaStream(target, config.remotestreams[index]);
         }
         resolve();
       } catch ( err ) {
@@ -681,10 +661,10 @@ class Room {
         // TODO handle room's secret
         var body = {
           "request": "create",
-          "token": token,
-          "room": room,
+          "token": config.token,
+          "room": config.room,
         };
-        handler.send({
+        config.handler.send({
           "message": body,
         });
         // TODO catch the response
@@ -701,10 +681,10 @@ class Room {
         // TODO handle room's secret
         var body = {
           "request": "destroy",
-          "token": token,
-          "room": room,
+          "token": config.token,
+          "room": config.room,
         };
-        handler.send({
+        config.handler.send({
           "message": body,
         });
         resolve();
