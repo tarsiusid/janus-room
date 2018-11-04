@@ -722,7 +722,8 @@ class Room {
         if (!options || (options && !options.room)) {
           throw 'room value is needed.';
         }
-        config.username = options.username;
+        config.username = options.username || username;
+        config.room = options.room || room;
         var register = {
           "request": "join",
           "token": config.token,
