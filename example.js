@@ -1,7 +1,7 @@
 window.Room = require('./src');
 
 var room;
-var server = 'http://localhost:8088/janus';
+var server = 'https://gw.tarsius.id:8089/janus';
 var roomId = 1337; // Demo room
 var username = window.prompt('username : ');
 if (!username) {
