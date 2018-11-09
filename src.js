@@ -808,7 +808,7 @@ class Room {
     });
   }
 
-  isStreamShareScreen(index) {
+  isShareScreenStream(index) {
     return new Promise((resolve, reject) => {
       var res = false;
       var tracks;
