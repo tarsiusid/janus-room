@@ -819,8 +819,11 @@ class Room {
           tracks = config.remotestreams[index].getTracks()
         }
         if (tracks && tracks[0] && tracks[0].label &&
+          // Video tracks from webcam got labeled as "Integrated Camera" or "iSight"
           // TODO collect this label value from various browsers/devices
-          (tracks[0].label.toLowerString().indexOf('monitor') > -1)
+          (tracks[0].label.toLowerString().indexOf('monitor') > -1 || // Firefox, "Primary Monitor"
+          tracks[0].label.toLowerString().indexOf('screen') > -1 // Chrome, "screen:0:0"
+          )
         ) {
           res = true;
         }
