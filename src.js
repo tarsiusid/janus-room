@@ -808,6 +808,29 @@ class Room {
     });
   }
 
+  isStreamShareScreen(index) {
+    return new Promise((resolve, reject) => {
+      var res = false;
+      var tracks;
+      try {
+        if (index === 0) {
+          tracks = config.mystream.getTracks()
+        } else {
+          tracks = config.remotestreams[index].getTracks()
+        }
+        if (tracks && tracks[0] && tracks[0].label &&
+          // TODO collect this label value from various browsers/devices
+          (tracks[0].label.toLowerString().indexOf('monitor') > -1)
+        ) {
+          res = true;
+        }
+        resolve(res)
+      } catch ( err ) {
+        reject(err);
+      }
+    });
+  }
+
   attachRecordedPlayStream(target) {
     return new Promise((resolve, reject) => {
       try {
