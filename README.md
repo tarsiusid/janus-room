@@ -45,7 +45,7 @@ room.init()
 ### Methods
 
 - `room.init()` - Initialize the session.
-- `room.register({room: roomId, username: username})` - Join to the room as usernam.
+- `room.register({room: roomId, username: username})` - Join to the room as username.
 - `room.toggleMuteAudio()` - Toggle local mic.
 - `room.toggleMuteVideo()` - Toggle local video stream.
 - `room.sendMessage(data)` - Send message throught Janus's DataChannel (activated by default).
@@ -53,6 +53,7 @@ room.init()
 - `room.shareScreen()` - Share screen.
 - `room.createRoom({room:1337})` - Create new room.
 - `room.removeRoom()` - Remove current room.
+- `room.isShareScreenStream(streamIndex)` - Detect whether the stream is a sharescreen. Local stream is on 0.
 
 ### Events (passed as params)
 
