@@ -866,6 +866,25 @@ class Room {
     });
   }
 
+  stopShareScreen() {
+    return new Promise((resolve, reject) => {
+      try {
+        unpublishOwnFeed()
+        setTimeout(() => {
+          publishOwnFeed({
+            audioSend: true,
+            replaceVideo: true,
+            replaceAudio: true,
+          }, () => {
+            resolve()
+          });
+        }, 500);
+      } catch ( err ) {
+        reject(err);
+      }
+    });
+  }
+
   publishOwnFeed(useAudio, addVideo) {
     publishOwnFeed(useAudio, addVideo);
   }
