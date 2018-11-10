@@ -1,17 +1,17 @@
 {
   "name": "janus-room",
-  "version": "0.1.25",
+  "version": "0.1.27",
   "description": "",
   "main": "src.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build" : "./node_modules/.bin/browserify example.js -o bundle.js"
+    "build": "./node_modules/.bin/browserify example.js -o bundle.js"
   },
   "author": "Herpiko Dwi Aguno <herpiko@gmail.com>",
   "homepage": "https://github.com/tarsiusid/janus-room",
-
   "license": "MIT",
   "dependencies": {
-    "browserify": "^16.2.3"
+    "browserify": "^16.2.3",
+    "volume-meter": "^2.0.1"
   }
 }

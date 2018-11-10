@@ -32,6 +32,12 @@ var onError = function(err) {
   }
 }
 
+var onVolumeMeterUpdate = function(streamIndex, volume) {
+  console.log('Volume meter update for ' + streamIndex + ' : ' + volume);
+  let el = document.getElementById('volume-meter-0');
+  el.style.width = volume + '%';
+}
+
 var onLocalJoin = function() {
   var htmlStr = '<div>' + username + '</div>';
   htmlStr += '<button id="local-toggle-mute-audio" onclick="localToggleMuteAudio()">Mute</button>';
@@ -84,6 +90,7 @@ var options = {
   onRecordedPlay: onRecordedPlay,
   onMessage: onMessage,
   onError: onError,
+  onVolumeMeterUpdate: onVolumeMeterUpdate,
 }
 
 room = window.room = new window.Room(options);

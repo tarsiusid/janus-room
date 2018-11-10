@@ -65,6 +65,7 @@ room.init()
 - `onRemoteUnjoin((streamIndex) => { ...`
 - `onMessage((data) => { ...`
 - `onError((err) => { ...`
+- `onVolumeMeterUpdate((streamIndex, volumeLevel) => { ...`
 
 ### Working example
 
