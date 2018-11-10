@@ -1,4 +1,5 @@
 const Janus = window.Janus = require('./janus');
+const volumeMeter = require('volume-meter');
 
 var config = {
   remotestreams: {},
@@ -334,6 +335,16 @@ function start() {
                   config.mystream = window.mystream = stream; // attach to global for debugging purpose
                   Janus.debug(stream);
                   config.onLocalJoin();
+                  if (config.onVolumeMeterUpdate) {
+                    let ctx = new AudioContext();
+                    let meter = volumeMeter(ctx, { tweenIn:2, tweenOut:6}, (volume) => {
+                      config.onVolumeMeterUpdate(0, volume);
+                    });
+                    let src = ctx.createMediaStreamSource(config.mystream);
+                    src.connect(meter);
+                    src.connect(ctx.destination);
+                    config.mystream.onended = meter.stop.bind(meter);
+                  }
                 },
                 onremotestream: function(stream) {
                   // The publisher stream is sendonly, we don't expect anything here
@@ -632,6 +643,16 @@ function newRemoteFeed(id, display, audio, video) {
         Janus.debug("Remote feed #" + remoteFeed.rfindex);
         config.remotestreams[remoteFeed.rfindex] = stream;
         config.onRemoteJoin(remoteFeed.rfindex, remoteFeed.rfdisplay);
+        if (config.onVolumeMeterUpdate) {
+          let ctx = new AudioContext();
+          let meter = volumeMeter(ctx, { tweenIn:2, tweenOut:6}, (volume) => {
+            config.onVolumeMeterUpdate(remoteFeed.rfindex, volume);
+          });
+          let src = ctx.createMediaStreamSource(config.remotestreams[remoteFeed.rfindex]);
+          src.connect(meter);
+          src.connect(ctx.destination);
+          config.remotestreams[remoteFeed.rfindex].onended = meter.stop.bind(meter);
+        }
       },
       oncleanup: function() {
         Janus.log(" ::: Got a cleanup notification (remote feed " + id + ") :::");
@@ -670,6 +691,7 @@ class Room {
     config.onMessage = options.onMessage || null;
     config.onDestroyed = options.onDestroyed || null;
     config.onError = options.onError || null;
+    config.onVolumeMeterUpdate = options.onVolumeMeterUpdate || null;
   }
 
 
