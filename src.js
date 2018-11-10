@@ -54,7 +54,7 @@ function publishOwnFeed(opts, cb) {
       },
       error: function(error) {
         Janus.error("WebRTC error:", error);
-        if (useAudio) {
+        if (opts && opts.audioSend) {
           publishOwnFeed({
             audioSend: false
           });
@@ -839,7 +839,7 @@ class Room {
       try {
         if (index === 0) {
           tracks = config.mystream.getVideoTracks()
-        } else {
+        } else if (config.remotestreams[index]) {
           tracks = config.remotestreams[index].getVideoTracks()
         }
         if (tracks && tracks[0] && tracks[0].label &&
@@ -907,8 +907,8 @@ class Room {
     });
   }
 
-  publishOwnFeed(useAudio, addVideo) {
-    publishOwnFeed(useAudio, addVideo);
+  publishOwnFeed(opts, cb) {
+    publishOwnFeed(opts, cb);
   }
 
   unpublishOwnFeed() {
