@@ -814,15 +814,15 @@ class Room {
       var tracks;
       try {
         if (index === 0) {
-          tracks = config.mystream.getTracks()
+          tracks = config.mystream.getVideoTracks()
         } else {
-          tracks = config.remotestreams[index].getTracks()
+          tracks = config.remotestreams[index].getVideoTracks()
         }
         if (tracks && tracks[0] && tracks[0].label &&
           // Video tracks from webcam got labeled as "Integrated Camera" or "iSight"
           // TODO collect this label value from various browsers/devices
-          (tracks[0].label.toLowerString().indexOf('monitor') > -1 || // Firefox, "Primary Monitor"
-          tracks[0].label.toLowerString().indexOf('screen') > -1 // Chrome, "screen:0:0"
+          (tracks[0].label.toLowerCase().indexOf('monitor') > -1 || // Firefox, "Primary Monitor"
+          tracks[0].label.toLowerCase().indexOf('screen') > -1 // Chrome, "screen:0:0"
           )
         ) {
           res = true;
