@@ -7,7 +7,7 @@ A Janus client library that provides simple interface to create a minimal-comple
 ### Install
 
 ```
-$ yarn add janus-room
+$ npm install janus-room
 ```
 
 ### Basic usage
@@ -45,6 +45,7 @@ room.init()
 ### Methods
 
 - `room.init()` - Initialize the session.
+
 - `room.register({room: roomId, username: username})` - Join to the room as username.
 - `room.toggleMuteAudio()` - Toggle local mic.
 - `room.toggleMuteVideo()` - Toggle local video stream.
@@ -67,9 +68,9 @@ room.init()
 
 Adjust the Janus gateway URL in `example.js`, then,
 
-- `yarn`
+- `npm install`
 - `npm run build`
-- Open `example.html` with your web browser.
+- Open `example.html` on your web browser.
 
 -----
 

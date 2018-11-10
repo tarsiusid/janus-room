@@ -27,6 +27,7 @@ function publishOwnFeed(opts, cb) {
         audioRecv: false,
         videoRecv: false,
         audioSend: opts.audioSend,
+        replaceAudio: opts.replaceAudio,
         videoSend: true,
         replaceVideo: opts.replaceVideo,
         data: true,
@@ -83,7 +84,7 @@ function shareScreen(cb) {
       media: {
         video: 'screen',
         videoRecv: false,
-        audioSend: false,
+        audioSend: true,
         videoSend: true,
       }, // Publishers are sendonly
       success: function(jsep) {
@@ -207,7 +208,8 @@ function start() {
                     console.log('Put back the webcam');
                     publishOwnFeed({
                       audioSend: true,
-                      replaceVideo: true
+                      replaceVideo: true,
+                      replaceAudio: true,
                     });
                   }
                 },
