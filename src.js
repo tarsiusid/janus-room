@@ -1025,6 +1025,19 @@ class Room {
       }
     });
   }
+  getStream(streamIndex) {
+    return new Promise((resolve, reject) => {
+      try {
+        if (streamIndex === 0) {
+          resolve(config.mystream);
+        } else {
+          resolve(config.remotestreams[streamIndex]);
+        }
+      } catch(e) {
+        reject(e);
+      }
+    });
+  }
 
   // TODO Fix me.
   // Helpers to create Simulcast-related UI, if enabled
