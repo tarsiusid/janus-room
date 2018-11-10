@@ -56,6 +56,7 @@ room.init()
 - `room.createRoom({room:1337})` - Create new room.
 - `room.removeRoom()` - Remove current room.
 - `room.isShareScreenStream(streamIndex)` - Detect whether the stream is a sharescreen. Local stream is on 0.
+- `room.getStream(streamIndex)` - Get stream instance by stream index.
 
 ### Events (passed as params)
 
