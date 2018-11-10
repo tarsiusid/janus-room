@@ -810,6 +810,32 @@ class Room {
     });
   }
 
+  isShareScreenStream(index) {
+    return new Promise((resolve, reject) => {
+      var res = false;
+      var tracks;
+      try {
+        if (index === 0) {
+          tracks = config.mystream.getVideoTracks()
+        } else {
+          tracks = config.remotestreams[index].getVideoTracks()
+        }
+        if (tracks && tracks[0] && tracks[0].label &&
+          // Video tracks from webcam got labeled as "Integrated Camera" or "iSight"
+          // TODO collect this label value from various browsers/devices
+          (tracks[0].label.toLowerCase().indexOf('monitor') > -1 || // Firefox, "Primary Monitor"
+          tracks[0].label.toLowerCase().indexOf('screen') > -1 // Chrome, "screen:0:0"
+          )
+        ) {
+          res = true;
+        }
+        resolve(res)
+      } catch ( err ) {
+        reject(err);
+      }
+    });
+  }
+
   attachRecordedPlayStream(target) {
     return new Promise((resolve, reject) => {
       try {
