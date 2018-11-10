@@ -1,7 +1,7 @@
 window.Room = require('./src');
 
 var room;
-var server = 'https://gw.tarsius.id:8089/janus';
+var server = 'http://localhost:8088/janus';
 var roomId = 1337; // Demo room
 var username = window.prompt('username : ');
 if (!username) {
@@ -102,6 +102,15 @@ room.init()
 
 document.getElementById('sharescreen').onclick = function() {
   room.shareScreen()
+    .then(() => {
+    })
+    .catch((err) => {
+      alert(err);
+    });
+}
+
+document.getElementById('stopsharescreen').onclick = function() {
+  room.stopShareScreen()
     .then(() => {
     })
     .catch((err) => {
