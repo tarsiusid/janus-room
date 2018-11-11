@@ -19,7 +19,6 @@ import Room from 'janus-room';
 
 var options = {
   server: server, // required
-  room: room, // required
 
   // Event handlers
   onLocalJoin: onLocalJoin,

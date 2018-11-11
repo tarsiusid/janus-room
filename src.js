@@ -337,7 +337,7 @@ function start() {
                   config.onLocalJoin();
                   if (config.onVolumeMeterUpdate) {
                     let ctx = new AudioContext();
-                    let meter = volumeMeter(ctx, { tweenIn:2, tweenOut:6}, (volume) => {
+                    let meter = volumeMeter(ctx, { tweenIn:2, tweenOut:6, delay:config.volumeMeterDelay}, (volume) => {
                       config.onVolumeMeterUpdate(0, volume);
                     });
                     let src = ctx.createMediaStreamSource(config.mystream);
@@ -645,7 +645,7 @@ function newRemoteFeed(id, display, audio, video) {
         config.onRemoteJoin(remoteFeed.rfindex, remoteFeed.rfdisplay);
         if (config.onVolumeMeterUpdate) {
           let ctx = new AudioContext();
-          let meter = volumeMeter(ctx, { tweenIn:2, tweenOut:6}, (volume) => {
+          let meter = volumeMeter(ctx, { tweenIn:2, tweenOut:6, delay:config.volumeMeterDelay}, (volume) => {
             config.onVolumeMeterUpdate(remoteFeed.rfindex, volume);
           });
           let src = ctx.createMediaStreamSource(config.remotestreams[remoteFeed.rfindex]);
@@ -684,6 +684,8 @@ class Room {
     config.extensionId = options.extensionId || null;
     config.token = options.token || null;
     config.useRecordPlugin = options.useRecordPlugin || false;
+    config.volumeMeterDelay = options.volumeMeterDelay || 0;
+    // Events
     config.onLocalJoin = options.onLocalJoin || null;
     config.onRemoteJoin = options.onRemoteJoin || null;
     config.onRemoteUnjoin = options.onRemoteUnjoin || null;
