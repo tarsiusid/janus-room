@@ -649,7 +649,6 @@ function newRemoteFeed(id, display, audio, video) {
           });
           let src = ctx.createMediaStreamSource(config.remotestreams[remoteFeed.rfindex]);
           src.connect(meter);
-          src.connect(ctx.destination);
           config.remotestreams[remoteFeed.rfindex].onended = meter.stop.bind(meter);
         }
       },
