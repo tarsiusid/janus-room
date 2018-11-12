@@ -342,7 +342,6 @@ function start() {
                     });
                     let src = ctx.createMediaStreamSource(config.mystream);
                     src.connect(meter);
-                    src.connect(ctx.destination);
                     config.mystream.onended = meter.stop.bind(meter);
                   }
                 },
