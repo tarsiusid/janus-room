@@ -84,7 +84,7 @@ var options = {
   token: 'a1b2c3d4',
   extensionId: 'bkkjmbohcfkfemepmepailpamnppmjkk',
   useRecordPlugin: true,
-  volumeMeterDelay: 10,
+  volumeMeterSkip: 10,
   onLocalJoin: onLocalJoin,
   onRemoteJoin: onRemoteJoin,
   onRemoteUnjoin: onRemoteUnjoin,

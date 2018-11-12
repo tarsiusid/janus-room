@@ -1,5 +1,5 @@
 const Janus = window.Janus = require('./janus');
-const volumeMeter = require('volume-meter');
+const volumeMeter = require('volume-meter-skip');
 
 var config = {
   remotestreams: {},
@@ -337,7 +337,7 @@ function start() {
                   config.onLocalJoin();
                   if (config.onVolumeMeterUpdate) {
                     let ctx = new AudioContext();
-                    let meter = volumeMeter(ctx, { tweenIn:2, tweenOut:6, delay:config.volumeMeterDelay}, (volume) => {
+                    let meter = volumeMeter(ctx, { tweenIn:2, tweenOut:6, skip:config.volumeMeterSkip}, (volume) => {
                       config.onVolumeMeterUpdate(0, volume);
                     });
                     let src = ctx.createMediaStreamSource(config.mystream);
@@ -645,7 +645,7 @@ function newRemoteFeed(id, display, audio, video) {
         config.onRemoteJoin(remoteFeed.rfindex, remoteFeed.rfdisplay);
         if (config.onVolumeMeterUpdate) {
           let ctx = new AudioContext();
-          let meter = volumeMeter(ctx, { tweenIn:2, tweenOut:6, delay:config.volumeMeterDelay}, (volume) => {
+          let meter = volumeMeter(ctx, { tweenIn:2, tweenOut:6, skip:config.volumeMeterSkip}, (volume) => {
             config.onVolumeMeterUpdate(remoteFeed.rfindex, volume);
           });
           let src = ctx.createMediaStreamSource(config.remotestreams[remoteFeed.rfindex]);
@@ -684,7 +684,7 @@ class Room {
     config.extensionId = options.extensionId || null;
     config.token = options.token || null;
     config.useRecordPlugin = options.useRecordPlugin || false;
-    config.volumeMeterDelay = options.volumeMeterDelay || 0;
+    config.volumeMeterSkip = options.volumeMeterSkip || 0;
     // Events
     config.onLocalJoin = options.onLocalJoin || null;
     config.onRemoteJoin = options.onRemoteJoin || null;
