@@ -1,6 +1,6 @@
 {
   "name": "janus-room",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "description": "",
   "main": "src.js",
   "scripts": {
@@ -12,6 +12,6 @@
   "license": "MIT",
   "dependencies": {
     "browserify": "^16.2.3",
-    "volume-meter": "github:tarsiusid/volume-meter"
+    "volume-meter-skip": "^2.0.1"
   }
 }
