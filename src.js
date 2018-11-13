@@ -1,6 +1,8 @@
 const Janus = window.Janus = require('./janus');
 const volumeMeter = require('volume-meter-skip');
 
+window.AudioContext = window.AudioContext || window.webkitAudioContext;
+
 var config = {
   remotestreams: {},
   feeds: [],
