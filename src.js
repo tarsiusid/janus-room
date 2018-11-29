@@ -485,7 +485,8 @@ function start() {
           },
           destroyed: function() {
             console.log('Destroyed');
-          }
+          },
+          iceServers: config.iceServers,
         }
       );
     } catch ( err ) {
@@ -694,6 +695,9 @@ class Room {
     config.onDestroyed = options.onDestroyed || null;
     config.onError = options.onError || null;
     config.onVolumeMeterUpdate = options.onVolumeMeterUpdate || null;
+    config.iceServers = options.iceServers || [{
+      urls: "stun:stun.l.google.com:19302"
+    }];
   }
 
 
