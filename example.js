@@ -1,7 +1,7 @@
 window.Room = require('./src');
 
 var room;
-var server = 'http://localhost:8088/janus';
+var server = 'https://gw.tarsius.id:8089/janus';
 var roomId = 1337; // Demo room
 var username = window.prompt('username : ');
 if (!username) {
@@ -83,6 +83,7 @@ var options = {
   room: roomId,
   token: 'a1b2c3d4',
   extensionId: 'bkkjmbohcfkfemepmepailpamnppmjkk',
+  iceServers: [{ urls : 'stun:stun.l.google.com:19302' }],
   useRecordPlugin: true,
   volumeMeterSkip: 10,
   onLocalJoin: onLocalJoin,
