@@ -207,7 +207,7 @@ function start() {
                 },
                 mediaState: function(medium, on) {
                   Janus.log("Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
-                  if (medium === 'video' && !on && config.isShareScreenActive && !config.mystream.active) {
+                  if (medium === 'video' && !on && config.isShareScreenActive) {
                     console.log('Put back the webcam');
                     publishOwnFeed({
                       audioSend: true,
