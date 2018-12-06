@@ -31,7 +31,7 @@ function publishOwnFeed(opts, cb) {
         videoRecv: false,
         audioSend: opts.audioSend,
         replaceAudio: opts.replaceAudio,
-        videoSend: true,
+        videoSend: opts.videoSend,
         replaceVideo: opts.replaceVideo,
         data: true,
       }, // Publishers are sendonly
@@ -68,14 +68,22 @@ function publishOwnFeed(opts, cb) {
 }
 
 
+// Unpublish our stream
 function unpublishOwnFeed() {
-  // Unpublish our stream
-  var unpublish = {
-    "request": "unpublish",
-  };
-  if (config.token) unpublish.token = config.token;
-  config.videoRoomHandler.send({
-    "message": unpublish
+  return new Promise((resolve, reject) => {
+    var unpublish = {
+      "request": "unpublish",
+    };
+    if (config.token) unpublish.token = config.token;
+    config.videoRoomHandler.send({
+      "message": unpublish,
+      success: function(){
+        resolve();
+      },
+      error: function(err) {
+        reject(err);
+      }
+    });
   });
 }
 
@@ -211,6 +219,7 @@ function start() {
                     console.log('Put back the webcam');
                     publishOwnFeed({
                       audioSend: true,
+                      videoSend: true,
                       replaceVideo: true,
                       replaceAudio: true,
                     });
@@ -802,6 +811,37 @@ class Room {
       } catch ( err ) {
         reject(err);
       }
+    });
+  }
+
+  toggleVideo() {
+    return new Promise((resolve, reject) => {
+      let videoStopped = false;
+      let audioStopped = false;
+      if (!config.mystream) {
+        reject('No local stream.');
+        return;
+      } else {
+        if (config.mystream.getVideoTracks().length > 0) {
+          videoStopped = config.mystream.getVideoTracks()[0].readyState === 'ended';
+        }
+        if (config.mystream.getAudioTracks().length > 0) {
+          audioStopped = config.mystream.getAudioTracks()[0].readyState === 'ended';
+        }
+      }
+      if (!videoStopped) {
+        config.mystream.getVideoTracks()[0].stop();
+      }
+      console.log(videoStopped);
+      console.log(audioStopped);
+      publishOwnFeed({
+        audioSend: !audioStopped,
+        videoSend: videoStopped,
+        replaceVideo: videoStopped,
+        replaceAudio: audioStopped,
+      }, () => {
+        resolve(!videoStopped)
+      });
     });
   }
 
