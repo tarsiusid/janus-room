@@ -1882,7 +1882,6 @@ function Janus(gatewayCallbacks) {
       // Until we implement the proxying of open requests within the Janus core, we open a channel ourselves whatever the case
       config.dataChannel = config.pc.createDataChannel("JanusDataChannel", {
         ordered: true,
-        maxPacketLifeTime: 3000,
         maxRetransmits: 10,
       }); // FIXME Add options (ordered, maxRetransmits, etc.)
       config.dataChannel.onmessage = onDataChannelMessage;
