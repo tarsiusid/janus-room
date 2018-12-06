@@ -46,8 +46,6 @@ room.init()
 - `room.init()` - Initialize the session.
 
 - `room.register({room: roomId, username: username})` - Join to the room as username.
-- `room.toggleMuteAudio()` - Toggle local mic.
-- `room.toggleMuteVideo()` - Toggle local video stream.
 - `room.sendMessage(data)` - Send message throught Janus's DataChannel (activated by default).
 - `room.attachStream(element, streamIndex)` - Attach a remote stream to a `<video>` element. Local stream is on 0.
 - `room.shareScreen()` - Share screen.
@@ -56,6 +54,11 @@ room.init()
 - `room.removeRoom()` - Remove current room.
 - `room.isShareScreenStream(streamIndex)` - Detect whether the stream is a sharescreen. Local stream is on 0.
 - `room.getStream(streamIndex)` - Get stream instance by stream index.
+- `room.toggleMuteAudio()` - Toggle local mic.
+- `room.toggleMuteVideo()` - Toggle local video stream.
+- `room.toggleVideo()` - Toggle local video stream.
+
+Please note that toggleMute\* only mute the stream, not stop it. Use `togggleVideo()` instead to stop the video stream.
 
 ### Events (passed as params)
 
