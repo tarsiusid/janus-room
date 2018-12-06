@@ -33,7 +33,6 @@ var onError = function(err) {
 }
 
 var onVolumeMeterUpdate = function(streamIndex, volume) {
-  console.log('Volume meter update for ' + streamIndex + ' : ' + volume);
   let el = document.getElementById('volume-meter-0');
   el.style.width = volume + '%';
 }
@@ -41,7 +40,8 @@ var onVolumeMeterUpdate = function(streamIndex, volume) {
 var onLocalJoin = function() {
   var htmlStr = '<div>' + username + '</div>';
   htmlStr += '<button id="local-toggle-mute-audio" onclick="localToggleMuteAudio()">Mute</button>';
-  htmlStr += '<button id="local-toggle-mute-video" onclick="localToggleMuteVideo()">Pause ebcam</button>';
+  htmlStr += '<button id="local-toggle-mute-video" onclick="localToggleMuteVideo()">Pause webcam</button>';
+  htmlStr += '<button id="local-toggle-video" onclick="localToggleVideo()">Toggle webcam</button>';
   htmlStr += '<video id="myvideo" style="width:inherit;" autoplay muted="muted"/>';
   document.getElementById('videolocal').innerHTML = htmlStr;
   let target = document.getElementById('myvideo');
@@ -217,5 +217,12 @@ window.localToggleMuteVideo = function() {
       } else {
         el.innerHTML = "Pause webcam";
       }
+    });
+}
+
+window.localToggleVideo = function() {
+  room.toggleVideo()
+    .then((stopped) => {
+      console.log(stopped);
     });
 }
