@@ -331,12 +331,12 @@ function start() {
                     var audio = msg["audio_codec"];
                     if (config.mystream && config.mystream.getAudioTracks() && config.mystream.getAudioTracks().length > 0 && !audio) {
                       // Audio has been rejected
-                      toastr.warning("Our audio stream has been rejected, viewers won't hear us");
+                      Janus.debug("Our audio stream has been rejected, viewers won't hear us");
                     }
                     var video = msg["video_codec"];
                     if (config.mystream && config.mystream.getVideoTracks() && config.mystream.getVideoTracks().length > 0 && !video) {
                       // Video has been rejected
-                      toastr.warning("Our video stream has been rejected, viewers won't see us");
+                      Janus.debug("Our video stream has been rejected, viewers won't see us");
                     // Hide the webcam video
                     }
                   }
@@ -534,7 +534,7 @@ function newRemoteFeed(id, display, audio, video) {
           if (video) {
             video = video.toUpperCase()
           }
-          toastr.warning("Publisher is using " + video + ", but Safari doesn't support it: disabling video");
+          Janus.debug("Publisher is using " + video + ", but Safari doesn't support it: disabling video");
           listen["offer_video"] = false;
         }
         listen["offer_data"] = true;
