@@ -31,7 +31,7 @@ function publishOwnFeed(opts, cb) {
         videoRecv: false,
         audioSend: opts.audioSend,
         replaceAudio: opts.replaceAudio,
-        videoSend: opts.videoSend,
+        videoSend: Janus.webRTCAdapter.browserDetails.browser === 'safari' ? false : opts.videoSend,
         replaceVideo: opts.replaceVideo,
         data: true,
       }, // Publishers are sendonly
@@ -42,7 +42,7 @@ function publishOwnFeed(opts, cb) {
         var publish = {
           "request": "configure",
           "audio": opts.audioSend,
-          "video": true,
+          "video": Janus.webRTCAdapter.browserDetails.browser === 'safari' ? false : true,
           "data": true,
         };
         if (config.token) publish.token = config.token;
@@ -917,6 +917,9 @@ class Room {
 
   shareScreen() {
     return new Promise((resolve, reject) => {
+      if (Janus.webRTCAdapter.browserDetails.browser === 'safari') {
+        reject(new Error('No video support for Safari browser.'));
+      }
       try {
         unpublishOwnFeed()
         setTimeout(() => {
