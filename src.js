@@ -9,6 +9,8 @@ var config = {
   bitrateTimer: []
 }
 
+window.remotestreams = config.remotestreams;
+
 // TODO Remove unused events / functions
 
 // Helpers
@@ -231,6 +233,8 @@ function start() {
                 onmessage: function(msg, jsep) {
                   Janus.debug(" ::: Got a message (publisher) :::");
                   Janus.debug(msg);
+                  Janus.debug(jsep);
+
                   var event = msg["videoroom"];
                   Janus.debug("Event: " + event);
                   if (event != undefined && event != null) {
@@ -255,6 +259,20 @@ function start() {
                           Janus.debug("  >> [" + id + "] " + display + " (audio: " + audio + ", video: " + video + ")");
                           newRemoteFeed(id, display, audio, video);
                         }
+                      }
+                    } else if (event === 'slow_link') {
+                      var uplink = result["uplink"];
+                      if (uplink !== 0) {
+                        if (config.onWarning) config.onWarning(msg);
+                        // Janus detected issues when receiving our media, let's slow down
+                        let bandwidth = parseInt(bandwidth / 1.5);
+                        config.recordPlayHandler.send({
+                          'message': {
+                            'request': 'configure',
+                            'video-bitrate-max': bandwidth, // Reduce the bitrate
+                            'video-keyframe-interval': 15000 // Keep the 15 seconds key frame interval
+                          }
+                        });
                       }
                     } else if (event === "destroyed") {
                       // The room has been destroyed
@@ -439,6 +457,7 @@ function start() {
                         } else if (event === 'slow_link') {
                           var uplink = result["uplink"];
                           if (uplink !== 0) {
+                            if (config.onWarning) config.onWarning(msg);
                             // Janus detected issues when receiving our media, let's slow down
                             let bandwidth = parseInt(bandwidth / 1.5);
                             config.recordPlayHandler.send({
@@ -490,7 +509,8 @@ function start() {
           },
           error: function(error) {
             Janus.error(error);
-            reject(e);
+            // TODO reconnect on net::ERR_INTERNET_DISCONNECTED
+            reject(error);
           },
           destroyed: function() {
             console.log('Destroyed');
@@ -561,6 +581,7 @@ function newRemoteFeed(id, display, audio, video) {
         Janus.debug(" ::: Got a message (subscriber) :::");
         Janus.debug(msg);
         var event = msg["videoroom"];
+        if (remoteFeed.rfindex && config.remotestreams[remoteFeed.rfindex]) config.remotestreams[remoteFeed.rfindex].lastUpdate = new Date();
         Janus.debug("Event: " + event);
         if (msg["error"] !== undefined && msg["error"] !== null) {
           config.onError(msg["error"]);
@@ -652,16 +673,21 @@ function newRemoteFeed(id, display, audio, video) {
       },
       onremotestream: function(stream) {
         Janus.debug("Remote feed #" + remoteFeed.rfindex);
-        config.remotestreams[remoteFeed.rfindex] = stream;
-        config.onRemoteJoin(remoteFeed.rfindex, remoteFeed.rfdisplay);
+        
+        config.remotestreams[remoteFeed.rfindex] = {}
+        config.remotestreams[remoteFeed.rfindex].index = remoteFeed.rfindex;
+        config.remotestreams[remoteFeed.rfindex].feedId = remoteFeed.getId();
+        config.remotestreams[remoteFeed.rfindex].stream = stream;
+        config.remotestreams[remoteFeed.rfindex].lastUpdate = new Date();
+        config.onRemoteJoin(remoteFeed.rfindex, remoteFeed.rfdisplay, remoteFeed.getId());
         if (config.onVolumeMeterUpdate) {
           let ctx = new AudioContext();
           let meter = volumeMeter(ctx, { tweenIn:2, tweenOut:6, skip:config.volumeMeterSkip}, (volume) => {
             config.onVolumeMeterUpdate(remoteFeed.rfindex, volume);
           });
-          let src = ctx.createMediaStreamSource(config.remotestreams[remoteFeed.rfindex]);
+          let src = ctx.createMediaStreamSource(config.remotestreams[remoteFeed.rfindex].stream);
           src.connect(meter);
-          config.remotestreams[remoteFeed.rfindex].onended = meter.stop.bind(meter);
+          config.remotestreams[remoteFeed.rfindex].stream.onended = meter.stop.bind(meter);
         }
       },
       oncleanup: function() {
@@ -687,6 +713,7 @@ class Room {
       feeds: [],
       bitrateTimer: []
     }
+    window.remotestreams = config.remotestreams;
     // Assign the values
     config.server = options.server || null;
     config.opaqueId = "videoroomtest-" + Janus.randomString(12);
@@ -702,8 +729,9 @@ class Room {
     config.onRecordedPlay = options.onRecordedPlay || null;
     config.onMessage = options.onMessage || null;
     config.onDestroyed = options.onDestroyed || null;
-    config.onError = options.onError || null;
     config.onVolumeMeterUpdate = options.onVolumeMeterUpdate || null;
+    config.onError = options.onError || null;
+    config.onWarning = options.onWarning || null;
     config.iceServers = options.iceServers || [{
       urls: "stun:stun.l.google.com:19302"
     }];
@@ -832,8 +860,6 @@ class Room {
       if (!videoStopped) {
         config.mystream.getVideoTracks()[0].stop();
       }
-      console.log(videoStopped);
-      console.log(audioStopped);
       publishOwnFeed({
         audioSend: !audioStopped,
         videoSend: videoStopped,
@@ -869,7 +895,7 @@ class Room {
         if (index === 0) {
           Janus.attachMediaStream(target, config.mystream);
         } else {
-          Janus.attachMediaStream(target, config.remotestreams[index]);
+          Janus.attachMediaStream(target, config.remotestreams[index].stream);
         }
         resolve();
       } catch ( err ) {
@@ -885,8 +911,8 @@ class Room {
       try {
         if (index === 0) {
           tracks = config.mystream.getVideoTracks()
-        } else if (config.remotestreams[index]) {
-          tracks = config.remotestreams[index].getVideoTracks()
+        } else if (config.remotestreams[index].stream) {
+          tracks = config.remotestreams[index].stream.getVideoTracks()
         }
         if (tracks && tracks[0] && tracks[0].label &&
           // Video tracks from webcam got labeled as "Integrated Camera" or "iSight"
@@ -1102,7 +1128,7 @@ class Room {
         if (streamIndex === 0) {
           resolve(config.mystream);
         } else {
-          resolve(config.remotestreams[streamIndex]);
+          resolve(config.remotestreams[streamIndex].stream);
         }
       } catch(e) {
         reject(e);

@@ -726,6 +726,15 @@ function Janus(gatewayCallbacks) {
         return;
       }
       pluginHandle.slowLink(json["uplink"], json["nacks"]);
+      var callback = pluginHandle.onmessage;
+      if (callback !== null && callback !== undefined) {
+        Janus.debug("Notifying application...");
+        // Send to callback specified when attaching plugin handle
+        callback(json, jsep);
+      } else {
+        // Send to generic callback (?)
+        Janus.debug("No provided notification callback");
+      }
     } else if (json["janus"] === "error") {
       // Oops, something wrong happened
       Janus.error("Ooops: " + json["error"].code + " " + json["error"].reason); // FIXME
