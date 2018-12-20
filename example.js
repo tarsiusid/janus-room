@@ -32,6 +32,10 @@ var onError = function(err) {
   }
 }
 
+var onWarning = function(msg) {
+  alert(msg);
+}
+
 var onVolumeMeterUpdate = function(streamIndex, volume) {
   let el = document.getElementById('volume-meter-0');
   el.style.width = volume + '%';
@@ -48,8 +52,8 @@ var onLocalJoin = function() {
   room.attachStream(target, 0);
 }
 
-var onRemoteJoin = function(index, remoteUsername, cb) {
-  document.getElementById('videoremote' + index).innerHTML = '<div>' + remoteUsername + '</div><video style="width:inherit;" id="remotevideo' + index + '" autoplay/>';
+var onRemoteJoin = function(index, remoteUsername, feedId) {
+  document.getElementById('videoremote' + index).innerHTML = '<div>' + remoteUsername + ':' + feedId + '</div><video style="width:inherit;" id="remotevideo' + index + '" autoplay/>';
   let target = document.getElementById('remotevideo' + index);
   room.attachStream(target, index);
 }
@@ -92,6 +96,7 @@ var options = {
   onRecordedPlay: onRecordedPlay,
   onMessage: onMessage,
   onError: onError,
+  onWarning: onWarning,
   onVolumeMeterUpdate: onVolumeMeterUpdate,
 }
 

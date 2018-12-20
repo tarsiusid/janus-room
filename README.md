@@ -63,7 +63,7 @@ Please note that toggleMute\* only mute the stream, not stop it. Use `togggleVid
 ### Events (passed as params)
 
 - `onLocalJoin(() => { ...`
-- `onRemoteJoin((streamIndex, username) => { ...`
+- `onRemoteJoin((streamIndex, username, feedId) => { ...`
 - `onRemoteUnjoin((streamIndex) => { ...`
 - `onMessage((data) => { ...`
 - `onError((err) => { ...`
