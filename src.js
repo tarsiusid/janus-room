@@ -1125,10 +1125,31 @@ class Room {
   getStream(streamIndex) {
     return new Promise((resolve, reject) => {
       try {
-        if (streamIndex === 0) {
+        if ('' + streamIndex === '0') {
           resolve(config.mystream);
         } else {
-          resolve(config.remotestreams[streamIndex].stream);
+          if (config.remotestreams[streamIndex]) {
+            resolve(config.remotestreams[streamIndex].stream);
+          } else {
+            reject(new Error('No such stream index.'));
+          }
+        }
+      } catch(e) {
+        reject(e);
+      }
+    });
+  }
+  getStreamLastUpdate(streamIndex) {
+    return new Promise((resolve, reject) => {
+      try {
+        if ('' + streamIndex === '0') {
+          resolve(new Date());
+        } else {
+          if (config.remotestreams[streamIndex]) {
+            resolve(config.remotestreams[streamIndex].lastUpdate);
+          } else {
+            reject(new Error('No such stream index.'));
+          }
         }
       } catch(e) {
         reject(e);
