@@ -54,6 +54,7 @@ room.init()
 - `room.removeRoom()` - Remove current room.
 - `room.isShareScreenStream(streamIndex)` - Detect whether the stream is a sharescreen. Local stream is on 0.
 - `room.getStream(streamIndex)` - Get stream instance by stream index.
+- `room.getStreamLastUpdate(streamIndex)` - Get stream last update by stream index.
 - `room.toggleMuteAudio()` - Toggle local mic.
 - `room.toggleMuteVideo()` - Toggle local video stream.
 - `room.toggleVideo()` - Toggle local video stream.
@@ -66,8 +67,9 @@ Please note that toggleMute\* only mute the stream, not stop it. Use `togggleVid
 - `onRemoteJoin((streamIndex, username, feedId) => { ...`
 - `onRemoteUnjoin((streamIndex) => { ...`
 - `onMessage((data) => { ...`
-- `onError((err) => { ...`
 - `onVolumeMeterUpdate((streamIndex, volumeLevel) => { ...`
+- `onError((err) => { ...`
+- `onWarning((msg) => { ...`
 
 ### Working example
 
