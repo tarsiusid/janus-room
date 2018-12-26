@@ -1131,7 +1131,7 @@ class Room {
           if (config.remotestreams[streamIndex]) {
             resolve(config.remotestreams[streamIndex].stream);
           } else {
-            reject(new Error('No such stream index.'));
+            reject(new Error('No such stream index: ' + streamIndex));
           }
         }
       } catch(e) {
@@ -1148,7 +1148,7 @@ class Room {
           if (config.remotestreams[streamIndex]) {
             resolve(config.remotestreams[streamIndex].lastUpdate);
           } else {
-            reject(new Error('No such stream index.'));
+            reject(new Error('No such stream index: ' + streamIndex));
           }
         }
       } catch(e) {
