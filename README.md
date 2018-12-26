@@ -54,7 +54,7 @@ room.init()
 - `room.removeRoom()` - Remove current room.
 - `room.isShareScreenStream(streamIndex)` - Detect whether the stream is a sharescreen. Local stream is on 0.
 - `room.getStream(streamIndex)` - Get stream instance by stream index.
-- `room.getStreamLastUpdate(streamIndex)` - Get stream last update by stream index.
+- `room.getStreamBitrate(streamIndex)` - Get stream last bitrate by stream index.
 - `room.toggleMuteAudio()` - Toggle local mic.
 - `room.toggleMuteVideo()` - Toggle local video stream.
 - `room.toggleVideo()` - Toggle local video stream.
