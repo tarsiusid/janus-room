@@ -509,7 +509,7 @@ function start() {
           },
           error: function(error) {
             Janus.error(error);
-            // TODO reconnect on net::ERR_INTERNET_DISCONNECTED
+            config.onError(new Error('Disconnected'));
             reject(error);
           },
           destroyed: function() {
@@ -1141,14 +1141,12 @@ class Room {
   getStreamBitrate(streamIndex) {
     return new Promise((resolve, reject) => {
       try {
-        if ('' + streamIndex === '0') {
-          resolve(new Date());
+        if (config.remotestreams[streamIndex] && config.remotestreams[streamIndex].feed && ''+streamIndex !== '0') {
+          resolve(config.remotestreams[streamIndex].feed.getBitrate());
+        } else if (config.videoRoomHandler && ''+streamIndex === '0') {
+          resolve(config.videoRoomHandler.getBitrate());
         } else {
-          if (config.remotestreams[streamIndex] && config.remotestreams[streamIndex].feed) {
-            resolve(config.remotestreams[streamIndex].feed.getBitrate());
-          } else {
-            reject(new Error('No such stream index: ' + streamIndex));
-          }
+          reject(new Error('No such stream index: ' + streamIndex));
         }
       } catch(e) {
         reject(e);

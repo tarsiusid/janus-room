@@ -531,13 +531,14 @@ function Janus(gatewayCallbacks) {
     createHandle(callbacks);
   };
 
-  function eventHandler() {
+  function eventHandler(cb) {
     if (sessionId == null) {
       return;
     }
     Janus.debug('Long poll...');
     if (!connected) {
       Janus.warn("Is the server down? (connected=false)");
+      if (cb) cb("Lost connection to the server. Retrying...");
       return;
     }
     var longpoll = server + "/" + sessionId + "?rid=" + new Date().getTime();
@@ -557,14 +558,17 @@ function Janus(gatewayCallbacks) {
       timeout: longPollTimeout,
       error: function(textStatus, errorThrown) {
         Janus.error(textStatus + ":", errorThrown);
+        gatewayCallbacks.error(errorThrown);
         retries++;
-        if (retries > 3) {
+        if (retries > 10) {
           // Did we just lose the server? :-(
           connected = false;
           gatewayCallbacks.error("Lost connection to the server (is it down?)");
           return;
         }
-        eventHandler();
+        setTimeout(() => {
+          eventHandler(cb);
+        }, 1000);
       }
     });
   }
@@ -573,7 +577,9 @@ function Janus(gatewayCallbacks) {
   function handleEvent(json, skipTimeout) {
     retries = 0;
     if (!websockets && sessionId !== undefined && sessionId !== null && skipTimeout !== true) {
-      setTimeout(eventHandler, 200);
+      setTimeout(() => {
+        eventHandler(gatewayCallbacks.error)
+      }, 200);
     }
     if (!websockets && Janus.isArray(json)) {
       // We got an array: it means we passed a maxev > 1, iterate on all objects
@@ -933,7 +939,7 @@ function Janus(gatewayCallbacks) {
           Janus.log("Created session: " + sessionId);
         }
         Janus.sessions[sessionId] = that;
-        eventHandler();
+        eventHandler(callbacks.error);
         callbacks.success();
       },
       error: function(textStatus, errorThrown) {
