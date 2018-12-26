@@ -581,7 +581,6 @@ function newRemoteFeed(id, display, audio, video) {
         Janus.debug(" ::: Got a message (subscriber) :::");
         Janus.debug(msg);
         var event = msg["videoroom"];
-        if (remoteFeed.rfindex && config.remotestreams[remoteFeed.rfindex]) config.remotestreams[remoteFeed.rfindex].lastUpdate = new Date();
         Janus.debug("Event: " + event);
         if (msg["error"] !== undefined && msg["error"] !== null) {
           config.onError(msg["error"]);
@@ -678,7 +677,6 @@ function newRemoteFeed(id, display, audio, video) {
         config.remotestreams[remoteFeed.rfindex].index = remoteFeed.rfindex;
         config.remotestreams[remoteFeed.rfindex].feedId = remoteFeed.getId();
         config.remotestreams[remoteFeed.rfindex].stream = stream;
-        config.remotestreams[remoteFeed.rfindex].lastUpdate = new Date();
         config.onRemoteJoin(remoteFeed.rfindex, remoteFeed.rfdisplay, remoteFeed.getId());
         if (config.onVolumeMeterUpdate) {
           let ctx = new AudioContext();
@@ -688,6 +686,7 @@ function newRemoteFeed(id, display, audio, video) {
           let src = ctx.createMediaStreamSource(config.remotestreams[remoteFeed.rfindex].stream);
           src.connect(meter);
           config.remotestreams[remoteFeed.rfindex].stream.onended = meter.stop.bind(meter);
+          config.remotestreams[remoteFeed.rfindex].feed = remoteFeed;
         }
       },
       oncleanup: function() {
@@ -1139,14 +1138,14 @@ class Room {
       }
     });
   }
-  getStreamLastUpdate(streamIndex) {
+  getStreamBitrate(streamIndex) {
     return new Promise((resolve, reject) => {
       try {
         if ('' + streamIndex === '0') {
           resolve(new Date());
         } else {
-          if (config.remotestreams[streamIndex]) {
-            resolve(config.remotestreams[streamIndex].lastUpdate);
+          if (config.remotestreams[streamIndex] && config.remotestreams[streamIndex].feed) {
+            resolve(config.remotestreams[streamIndex].feed.getBitrate());
           } else {
             reject(new Error('No such stream index: ' + streamIndex));
           }
