@@ -198,7 +198,7 @@ function start() {
                 plugin: "janus.plugin.videoroom",
                 opaqueId: config.opaqueId,
                 success: function(pluginHandle) {
-                  config.videoRoomHandler = pluginHandle;
+                  config.videoRoomHandler = window.myfeed = pluginHandle;
                   Janus.log("Plugin attached! (" + config.videoRoomHandler.getPlugin() + ", id=" + config.videoRoomHandler.getId() + ")");
                   Janus.log("  -- This is a publisher/manager");
                   resolve();
@@ -234,6 +234,7 @@ function start() {
                   Janus.debug(" ::: Got a message (publisher) :::");
                   Janus.debug(msg);
                   Janus.debug(jsep);
+                  config.videoRoomHandler.alive = true;
 
                   var event = msg["videoroom"];
                   Janus.debug("Event: " + event);
@@ -410,6 +411,7 @@ function start() {
                   onmessage: function(msg, jsep) {
                     Janus.debug(" ::: Got a message :::");
                     Janus.debug(msg);
+                    config.videoRoomHandler.alive = true;
                     var result = msg["result"];
                     if (result !== null && result !== undefined) {
                       if (result["status"] !== undefined && result["status"] !== null) {
@@ -508,8 +510,9 @@ function start() {
             }
           },
           error: function(error) {
+            config.videoRoomHandler.alive = false;
             Janus.error(error);
-            config.onError(new Error('Disconnected'));
+            config.onError(error);
             reject(error);
           },
           destroyed: function() {
@@ -580,6 +583,7 @@ function newRemoteFeed(id, display, audio, video) {
       onmessage: function(msg, jsep) {
         Janus.debug(" ::: Got a message (subscriber) :::");
         Janus.debug(msg);
+        config.videoRoomHandler.alive = true;
         var event = msg["videoroom"];
         Janus.debug("Event: " + event);
         if (msg["error"] !== undefined && msg["error"] !== null) {
@@ -1144,7 +1148,7 @@ class Room {
         if (config.remotestreams[streamIndex] && config.remotestreams[streamIndex].feed && ''+streamIndex !== '0') {
           resolve(config.remotestreams[streamIndex].feed.getBitrate());
         } else if (config.videoRoomHandler && ''+streamIndex === '0') {
-          resolve(config.videoRoomHandler.getBitrate());
+          resolve(config.videoRoomHandler.alive ? true : false);
         } else {
           reject(new Error('No such stream index: ' + streamIndex));
         }

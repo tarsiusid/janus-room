@@ -538,7 +538,7 @@ function Janus(gatewayCallbacks) {
     Janus.debug('Long poll...');
     if (!connected) {
       Janus.warn("Is the server down? (connected=false)");
-      if (cb) cb("Lost connection to the server. Retrying...");
+      if (cb) cb(new Error("Lost connection to the server. Retrying..."));
       return;
     }
     var longpoll = server + "/" + sessionId + "?rid=" + new Date().getTime();
@@ -560,15 +560,15 @@ function Janus(gatewayCallbacks) {
         Janus.error(textStatus + ":", errorThrown);
         gatewayCallbacks.error(errorThrown);
         retries++;
-        if (retries > 10) {
+        if (retries > 5) {
           // Did we just lose the server? :-(
           connected = false;
-          gatewayCallbacks.error("Lost connection to the server (is it down?)");
+          gatewayCallbacks.error(new Error("Lost connection to the server (is it down?)"));
           return;
         }
         setTimeout(() => {
           eventHandler(cb);
-        }, 1000);
+        }, 5000);
       }
     });
   }
@@ -712,6 +712,15 @@ function Janus(gatewayCallbacks) {
         return;
       }
       var pluginHandle = pluginHandles[sender];
+      var callback = pluginHandle.onmessage;
+      if (callback !== null && callback !== undefined) {
+        Janus.debug("Notifying application...");
+        // Send to callback specified when attaching plugin handle
+        callback(json, jsep);
+      } else {
+        // Send to generic callback (?)
+        Janus.debug("No provided notification callback");
+      }
       if (pluginHandle === undefined || pluginHandle === null) {
         Janus.debug("This handle is not attached to this session");
         return;
@@ -910,7 +919,7 @@ function Janus(gatewayCallbacks) {
           }
           connected = false;
           // FIXME What if this is called when the page is closed?
-          gatewayCallbacks.error("Lost connection to the server (is it down?)");
+          gatewayCallbacks.error(new Error("Lost connection to the server (is it down?)"));
         }
       };
 
