@@ -1,6 +1,6 @@
 {
   "name": "janus-room",
-  "version": "0.1.48",
+  "version": "0.1.49",
   "description": "",
   "main": "src.js",
   "scripts": {

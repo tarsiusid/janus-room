@@ -217,15 +217,7 @@ function start() {
                 },
                 mediaState: function(medium, on) {
                   Janus.log("Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
-                  if (medium === 'video' && !on && config.isShareScreenActive) {
-                    console.log('Put back the webcam');
-                    publishOwnFeed({
-                      audioSend: true,
-                      videoSend: true,
-                      replaceVideo: true,
-                      replaceAudio: true,
-                    });
-                  }
+                  // FIXME Be aware, in Chrome, this on signal is not always true
                 },
                 webrtcState: function(on) {
                   Janus.log("Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
@@ -363,6 +355,19 @@ function start() {
                 onlocalstream: function(stream) {
                   Janus.debug(" ::: Got a local stream :::");
                   config.mystream = window.mystream = stream; // attach to global for debugging purpose
+                  if (config.mystream.getVideoTracks().length > 0) {
+                    config.mystream.getVideoTracks()[0].onended = function(){
+                      if (config.isShareScreenActive) {
+                        console.log('Put back the webcam');
+                        publishOwnFeed({
+                          audioSend: true,
+                          videoSend: true,
+                          replaceVideo: true,
+                          replaceAudio: true,
+                        });
+                      }
+                    }
+                  }
                   Janus.debug(stream);
                   config.onLocalJoin();
                   if (config.onVolumeMeterUpdate) {
@@ -921,7 +926,8 @@ class Room {
           // Video tracks from webcam got labeled as "Integrated Camera" or "iSight"
           // TODO collect this label value from various browsers/devices
           (tracks[0].label.toLowerCase().indexOf('monitor') > -1 || // Firefox, "Primary Monitor"
-          tracks[0].label.toLowerCase().indexOf('screen') > -1 // Chrome, "screen:0:0"
+          tracks[0].label.toLowerCase().indexOf('screen') > -1 || // Chrome, "screen:0:0"
+          tracks[0].label.toLowerCase().indexOf('window:') > -1 // Chrome, "window:37483", window capture
           )
         ) {
           res = true;
