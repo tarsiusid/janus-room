@@ -79,6 +79,10 @@ Adjust the Janus gateway URL in `example.js`, then,
 - `npm run build`
 - Open `example.html` on your web browser.
 
+### Warning
+
+`janus-room` is still in heavy development and will makes many breaking API changes.
+
 -----
 
 ![tarsier](https://user-images.githubusercontent.com/2534060/47661055-e06e4580-dbca-11e8-96f4-30dcdcb14c81.png)
