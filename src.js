@@ -254,19 +254,21 @@ function start() {
                         }
                       }
                     } else if (event === 'slow_link') {
-                      var uplink = result["uplink"];
-                      if (uplink !== 0) {
-                        if (config.onWarning) config.onWarning(msg);
-                        // Janus detected issues when receiving our media, let's slow down
-                        if (!config.isShareScreenActive) {
-                          let bandwidth = parseInt(bandwidth / 1.5);
-                          config.recordPlayHandler.send({
-                            'message': {
-                              'request': 'configure',
-                              'video-bitrate-max': bandwidth, // Reduce the bitrate
-                              'video-keyframe-interval': 15000 // Keep the 15 seconds key frame interval
-                            }
-                          });
+                      if (result) {
+                        var uplink = result["uplink"];
+                        if (uplink !== 0) {
+                          if (config.onWarning) config.onWarning(msg);
+                          // Janus detected issues when receiving our media, let's slow down
+                          if (!config.isShareScreenActive) {
+                            let bandwidth = parseInt(bandwidth / 1.5);
+                            config.recordPlayHandler.send({
+                              'message': {
+                                'request': 'configure',
+                                'video-bitrate-max': bandwidth, // Reduce the bitrate
+                                'video-keyframe-interval': 15000 // Keep the 15 seconds key frame interval
+                              }
+                            });
+                          }
                         }
                       }
                     } else if (event === "destroyed") {
@@ -464,19 +466,21 @@ function start() {
                             config.recordingId = id;
                           }
                         } else if (event === 'slow_link') {
-                          var uplink = result["uplink"];
-                          if (uplink !== 0) {
-                            if (config.onWarning) config.onWarning(msg);
-                            // Janus detected issues when receiving our media, let's slow down
-                            if (!config.isShareScreenActive) {
-                              let bandwidth = parseInt(bandwidth / 1.5);
-                              config.recordPlayHandler.send({
-                                'message': {
-                                  'request': 'configure',
-                                  'video-bitrate-max': bandwidth, // Reduce the bitrate
-                                  'video-keyframe-interval': 15000 // Keep the 15 seconds key frame interval
-                                }
-                              });
+                          if (result) {
+                            var uplink = result["uplink"];
+                            if (uplink !== 0) {
+                              if (config.onWarning) config.onWarning(msg);
+                              // Janus detected issues when receiving our media, let's slow down
+                              if (!config.isShareScreenActive) {
+                                let bandwidth = parseInt(bandwidth / 1.5);
+                                config.recordPlayHandler.send({
+                                  'message': {
+                                    'request': 'configure',
+                                    'video-bitrate-max': bandwidth, // Reduce the bitrate
+                                    'video-keyframe-interval': 15000 // Keep the 15 seconds key frame interval
+                                  }
+                                });
+                              }
                             }
                           }
                         } else if (event === 'stopped') {
