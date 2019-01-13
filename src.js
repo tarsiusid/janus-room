@@ -99,6 +99,7 @@ function shareScreen(cb) {
         videoRecv: false,
         audioSend: true,
         videoSend: true,
+        data: true,
       }, // Publishers are sendonly
       success: function(jsep) {
         Janus.debug("Got publisher SDP!");
