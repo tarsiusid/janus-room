@@ -484,7 +484,7 @@ function start() {
                               }
                             }
                           }
-                        } else if (event === 'stopped') {
+                        } else if (event === 'stopped' && result) {
                           Janus.log("Session has stopped!");
                           var id = result["id"];
                           if (config.recordingId !== null && config.recordingId !== undefined) {
@@ -524,7 +524,7 @@ function start() {
             }
           },
           error: function(error) {
-            config.videoRoomHandler.alive = false;
+            if (config.videoRoomHandler) config.videoRoomHandler.alive = false;
             Janus.error(error);
             config.onError(error);
             reject(error);
