@@ -2,11 +2,14 @@ window.Room = require('./src');
 
 var room;
 var server = 'https://gw.tarsius.id:8089/janus';
-var roomId = 1337; // Demo room
-var username = window.prompt('username : ');
+var roomId = 13371; // Demo room
+var username = 'user' + (new Date()).valueOf()
+var publishOwnFeed = false;
 if (!username) {
   return alert('Username is needed. Please refresh');
 }
+publishOwnFeed = window.confirm("Publish own feed?")
+alert(publishOwnFeed)
 document.getElementById('username').innerHTML = username;
 
 // Event handlers
@@ -87,6 +90,7 @@ var options = {
   room: roomId,
   token: 'a1b2c3d4',
   extensionId: 'bkkjmbohcfkfemepmepailpamnppmjkk',
+  publishOwnFeed: publishOwnFeed,
   iceServers: [{ urls : 'stun:stun.l.google.com:19302' }],
   useRecordPlugin: true,
   volumeMeterSkip: 10,

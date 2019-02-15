@@ -237,9 +237,11 @@ function start() {
                       config.myid = msg["id"];
                       config.mypvtid = msg["private_id"];
                       Janus.log("Successfully joined room " + msg["room"] + " with ID " + config.myid);
-                      publishOwnFeed({
-                        audioSend: true
-                      });
+                      if (config.publishOwnFeed) {
+                        publishOwnFeed({
+                          audioSend: true
+                        });
+                      }
                       // Any new feed to attach to?
                       if (msg["publishers"] !== undefined && msg["publishers"] !== null) {
                         var list = msg["publishers"];
@@ -362,7 +364,7 @@ function start() {
                   config.mystream = window.mystream = stream; // attach to global for debugging purpose
                   if (config.mystream.getVideoTracks().length > 0) {
                     config.mystream.getVideoTracks()[0].onended = function(){
-                      if (config.isShareScreenActive) {
+                      if (config.isShareScreenActive && config.publishOwnFeed) {
                         console.log('Put back the webcam');
                         publishOwnFeed({
                           audioSend: true,
@@ -735,6 +737,7 @@ class Room {
     config.server = options.server || null;
     config.opaqueId = "videoroomtest-" + Janus.randomString(12);
     config.room = options.room || null;
+    config.publishOwnFeed = options.publishOwnFeed || false;
     config.extensionId = options.extensionId || null;
     config.token = options.token || null;
     config.useRecordPlugin = options.useRecordPlugin || false;
@@ -877,14 +880,18 @@ class Room {
       if (!videoStopped) {
         config.mystream.getVideoTracks()[0].stop();
       }
-      publishOwnFeed({
-        audioSend: !audioStopped,
-        videoSend: videoStopped,
-        replaceVideo: videoStopped,
-        replaceAudio: audioStopped,
-      }, () => {
+      if (config.publishOwnFeed) {
+        publishOwnFeed({
+          audioSend: !audioStopped,
+          videoSend: videoStopped,
+          replaceVideo: videoStopped,
+          replaceAudio: audioStopped,
+        }, () => {
+          resolve(!videoStopped)
+        });
+      } else {
         resolve(!videoStopped)
-      });
+      }
     });
   }
 
@@ -964,6 +971,9 @@ class Room {
       if (Janus.webRTCAdapter.browserDetails.browser === 'safari') {
         reject(new Error('No video support for Safari browser.'));
       }
+      if (!config.publishOwnFeed) {
+        return reject();
+      }
       try {
         unpublishOwnFeed()
         setTimeout(() => {
@@ -983,6 +993,9 @@ class Room {
 
   stopShareScreen() {
     return new Promise((resolve, reject) => {
+      if (!config.publishOwnFeed) {
+        return reject();
+      }
       try {
         unpublishOwnFeed()
         setTimeout(() => {
